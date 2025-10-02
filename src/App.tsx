@@ -29,6 +29,18 @@ function AppContent() {
   });
   const [isAddSkillModalOpen, setIsAddSkillModalOpen] = useState(false);
 
+  // Update user progress when skills change
+  useEffect(() => {
+    const totalExp = skills.reduce((sum, skill) => sum + skill.totalExperience, 0);
+    const totalLevel = calculateLevelFromExperience(totalExp);
+
+    setUserProgress(prev => ({
+      ...prev,
+      totalLevel,
+      totalExperience: totalExp,
+    }));
+  }, [skills, setUserProgress]);
+
   // Show loading spinner while checking auth
   if (loading) {
     return <LoadingSpinner />;
@@ -38,18 +50,6 @@ function AppContent() {
   if (!user) {
     return <AuthPage />;
   }
-
-  // Update user progress when skills change
-  useEffect(() => {
-    const totalExp = skills.reduce((sum, skill) => sum + skill.totalExperience, 0);
-    const totalLevel = calculateLevelFromExperience(totalExp);
-    
-    setUserProgress(prev => ({
-      ...prev,
-      totalLevel,
-      totalExperience: totalExp,
-    }));
-  }, [skills, setUserProgress]);
 
   const addSkill = (name: string, color: string) => {
     const newSkill: Skill = {
