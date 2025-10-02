@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Gamepad2, Zap } from 'lucide-react';
+import { Plus, Gamepad2, Zap, LogOut } from 'lucide-react';
 import { Skill, Mission, UserProgress } from './types';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthPage } from './components/AuthPage';
+import { LoadingSpinner } from './components/LoadingSpinner';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { 
   generateMissionForSkill, 
@@ -13,7 +16,8 @@ import { MissionCard } from './components/MissionCard';
 import { StatsOverview } from './components/StatsOverview';
 import { AddSkillModal } from './components/AddSkillModal';
 
-function App() {
+function AppContent() {
+  const { user, loading, signOut } = useAuth();
   const [skills, setSkills] = useLocalStorage<Skill[]>('system-skills', []);
   const [missions, setMissions] = useLocalStorage<Mission[]>('system-missions', []);
   const [userProgress, setUserProgress] = useLocalStorage<UserProgress>('system-progress', {
@@ -24,6 +28,16 @@ function App() {
     longestStreak: 0,
   });
   const [isAddSkillModalOpen, setIsAddSkillModalOpen] = useState(false);
+
+  // Show loading spinner while checking auth
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  // Show auth page if not logged in
+  if (!user) {
+    return <AuthPage />;
+  }
 
   // Update user progress when skills change
   useEffect(() => {
@@ -108,17 +122,34 @@ function App() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-xl">
-              <Gamepad2 className="w-8 h-8 text-white" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-xl">
+                <Gamepad2 className="w-8 h-8 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                System
+              </h1>
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              System
-            </h1>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Welcome back!</p>
+                <p className="text-sm font-medium text-gray-800">{user.email}</p>
+              </div>
+              <button
+                onClick={signOut}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg transition-colors duration-200"
+                title="Sign out"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Level up what you love. Transform your skills into an epic journey of growth and achievement.
-          </p>
+          <div className="text-center">
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              Level up what you love. Transform your skills into an epic journey of growth and achievement.
+            </p>
+          </div>
         </div>
 
         {/* Stats Overview */}
@@ -212,6 +243,14 @@ function App() {
         onAddSkill={addSkill}
       />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
