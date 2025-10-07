@@ -79,6 +79,6 @@ const getMissionTemplates = (skillName: string, difficulty: Mission['difficulty'
 };
 
 export const getSkillColors = (): string[] => [
-  '#433BFF', '#FF6B35', '#00D9FF', '#7B68EE', '#FF1744', 
-  '#00C853', '#FF6F00', '#E91E63', '#3F51B5', '#4CAF50'
+  '#8EE3EF', '#254E70', '#37718E', '#5A9FB5', '#1B3E52',
+  '#6BC9D5', '#3D6B8F', '#4DA3B8', '#2A5D75', '#A0E7F0'
 ];

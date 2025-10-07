@@ -12,25 +12,25 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ progress }) => {
       label: 'Total Level',
       value: progress.totalLevel,
       icon: Trophy,
-      color: 'text-yellow-600 bg-yellow-50',
+      color: 'text-primary bg-primary/10',
     },
     {
       label: 'Experience',
       value: progress.totalExperience.toLocaleString(),
       icon: TrendingUp,
-      color: 'text-blue-600 bg-blue-50',
+      color: 'text-secondary bg-secondary/10',
     },
     {
       label: 'Missions Done',
       value: progress.missionsCompleted,
       icon: Target,
-      color: 'text-green-600 bg-green-50',
+      color: 'text-accent-purple bg-accent-purple/10',
     },
     {
       label: 'Current Streak',
       value: progress.currentStreak,
       icon: Flame,
-      color: 'text-orange-600 bg-orange-50',
+      color: 'text-primary bg-primary/20',
     },
   ];
 
@@ -39,12 +39,12 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ progress }) => {
       {stats.map((stat) => {
         const Icon = stat.icon;
         return (
-          <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-secondary/10 p-4">
             <div className={`w-10 h-10 rounded-lg ${stat.color} flex items-center justify-center mb-2`}>
               <Icon className="w-5 h-5" />
             </div>
-            <div className="text-2xl font-bold text-gray-800 mb-1">{stat.value}</div>
-            <div className="text-sm text-gray-600">{stat.label}</div>
+            <div className="text-2xl font-bold text-secondary mb-1">{stat.value}</div>
+            <div className="text-sm text-secondary/70">{stat.label}</div>
           </div>
         );
       })}

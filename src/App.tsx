@@ -118,17 +118,17 @@ function AppContent() {
   const completedMissions = missions.filter(m => m.isCompleted);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-accent-light to-primary/10">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-xl">
+              <div className="bg-gradient-to-br from-primary to-secondary p-3 rounded-xl">
                 <Gamepad2 className="w-8 h-8 text-white" />
               </div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                System
+              <h1 className="text-4xl font-bold text-secondary">
+                THE SYSTEM
               </h1>
             </div>
             <div className="flex items-center gap-4">
@@ -138,7 +138,7 @@ function AppContent() {
               </div>
               <button
                 onClick={signOut}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg transition-colors duration-200"
+                className="bg-secondary/10 hover:bg-secondary/20 text-secondary p-2 rounded-lg transition-colors duration-200"
                 title="Sign out"
               >
                 <LogOut className="w-5 h-5" />
@@ -146,8 +146,8 @@ function AppContent() {
             </div>
           </div>
           <div className="text-center">
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Level up what you love. Transform your skills into an epic journey of growth and achievement.
+            <p className="text-secondary/80 text-lg max-w-2xl mx-auto">
+              Level up what you love. Make growth feel like a game.
             </p>
           </div>
         </div>
@@ -158,10 +158,10 @@ function AppContent() {
         {/* Skills Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Your Skills</h2>
+            <h2 className="text-2xl font-bold text-secondary">Your Skills</h2>
             <button
               onClick={() => setIsAddSkillModalOpen(true)}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-2"
+              className="bg-gradient-to-r from-primary to-secondary text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-all duration-200 flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               Add Skill
@@ -170,14 +170,14 @@ function AppContent() {
 
           {skills.length === 0 ? (
             <div className="text-center py-12">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="bg-gradient-to-br from-primary to-secondary w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Zap className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Ready to Level Up?</h3>
-              <p className="text-gray-600 mb-4">Add your first skill to start your growth journey!</p>
+              <h3 className="text-xl font-semibold text-secondary mb-2">Ready to Level Up?</h3>
+              <p className="text-secondary/70 mb-4">Add your first skill to start your growth journey!</p>
               <button
                 onClick={() => setIsAddSkillModalOpen(true)}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+                className="bg-gradient-to-r from-primary to-secondary text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-all duration-200"
               >
                 Add Your First Skill
               </button>
@@ -198,7 +198,7 @@ function AppContent() {
         {/* Active Missions */}
         {activeMissions.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Active Missions</h2>
+            <h2 className="text-2xl font-bold text-secondary mb-6">Active Missions</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {activeMissions.map(mission => {
                 const skill = skills.find(s => s.id === mission.skillId);
@@ -218,7 +218,7 @@ function AppContent() {
         {/* Completed Missions */}
         {completedMissions.length > 0 && (
           <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Completed Missions</h2>
+            <h2 className="text-2xl font-bold text-secondary mb-6">Completed Missions</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {completedMissions.slice(0, 6).map(mission => {
                 const skill = skills.find(s => s.id === mission.skillId);

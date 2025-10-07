@@ -52,7 +52,7 @@ export const MissionCard: React.FC<MissionCardProps> = ({ mission, skill, onComp
 
   return (
     <div className={`bg-white rounded-xl shadow-sm border p-6 transition-all duration-200 ${
-      mission.isCompleted ? 'bg-gray-50 border-gray-200' : 'border-gray-100 hover:shadow-md'
+      mission.isCompleted ? 'bg-secondary/5 border-secondary/20' : 'border-secondary/10 hover:shadow-md'
     }`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
@@ -62,16 +62,16 @@ export const MissionCard: React.FC<MissionCardProps> = ({ mission, skill, onComp
               style={{ backgroundColor: skill.color }}
             />
             <h3 className={`text-lg font-semibold ${
-              mission.isCompleted ? 'text-gray-600' : 'text-gray-800'
+              mission.isCompleted ? 'text-secondary/60' : 'text-secondary'
             }`}>
               {mission.title}
             </h3>
             {mission.isRecurring && (
-              <RefreshCw className="w-4 h-4 text-blue-500" />
+              <RefreshCw className="w-4 h-4 text-primary" />
             )}
           </div>
           <p className={`text-sm ${
-            mission.isCompleted ? 'text-gray-500' : 'text-gray-600'
+            mission.isCompleted ? 'text-secondary/50' : 'text-secondary/70'
           }`}>
             {mission.description}
           </p>
@@ -86,11 +86,11 @@ export const MissionCard: React.FC<MissionCardProps> = ({ mission, skill, onComp
         <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getDifficultyColor(mission.difficulty)}`}>
           {mission.difficulty}
         </div>
-        <div className="flex items-center gap-1 text-sm text-gray-600">
+        <div className="flex items-center gap-1 text-sm text-secondary/70">
           <Award className="w-4 h-4" />
           <span>{mission.experience} XP</span>
         </div>
-        <div className="flex items-center gap-1 text-sm text-gray-600">
+        <div className="flex items-center gap-1 text-sm text-secondary/70">
           <Clock className="w-4 h-4" />
           <span>{mission.timeLimit}m limit</span>
         </div>
@@ -99,9 +99,9 @@ export const MissionCard: React.FC<MissionCardProps> = ({ mission, skill, onComp
       {!mission.isCompleted && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Time Remaining:</span>
+            <span className="text-sm text-secondary/70">Time Remaining:</span>
             <div className={`text-sm font-medium ${
-              timeRemaining === 0 ? 'text-red-600' : timeRemaining < 300 ? 'text-orange-600' : 'text-gray-700'
+              timeRemaining === 0 ? 'text-red-600' : timeRemaining < 300 ? 'text-orange-600' : 'text-secondary'
             }`}>
               {formatTime(timeRemaining)}
               {timeRemaining === 0 && (
@@ -114,7 +114,7 @@ export const MissionCard: React.FC<MissionCardProps> = ({ mission, skill, onComp
             {!isActive && timeRemaining > 0 && (
               <button
                 onClick={() => setIsActive(true)}
-                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200"
+                className="flex-1 bg-secondary text-white py-2 px-4 rounded-lg font-medium hover:opacity-90 transition-colors duration-200"
               >
                 Start Mission
               </button>
