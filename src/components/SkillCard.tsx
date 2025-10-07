@@ -9,12 +9,13 @@ interface SkillCardProps {
 
 export const SkillCard: React.FC<SkillCardProps> = ({ skill, onGenerateMission }) => {
   const progressPercentage = ((skill.totalExperience - (skill.level - 1) ** 2 * 100) / skill.experienceToNext) * 100;
+  const clampedProgress = Math.min(100, Math.max(5, progressPercentage));
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div 
+          <div
             className="w-4 h-4 rounded-full"
             style={{ backgroundColor: skill.color }}
           />
@@ -32,12 +33,12 @@ export const SkillCard: React.FC<SkillCardProps> = ({ skill, onGenerateMission }
             <span>Progress to Level {skill.level + 1}</span>
             <span>{skill.experienceToNext} XP remaining</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
+          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div
               className="h-2 rounded-full transition-all duration-300"
-              style={{ 
-                width: `${Math.max(5, progressPercentage)}%`,
-                backgroundColor: skill.color 
+              style={{
+                width: `${clampedProgress}%`,
+                backgroundColor: skill.color
               }}
             />
           </div>
