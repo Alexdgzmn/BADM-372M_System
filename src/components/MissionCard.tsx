@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Mission, Skill } from '../types';
-import { Clock, Award, RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Clock, Award, RefreshCw, CheckCircle2, AlertTriangle, Sparkles, Lightbulb } from 'lucide-react';
 
 interface MissionCardProps {
   mission: Mission;
@@ -75,6 +75,47 @@ export const MissionCard: React.FC<MissionCardProps> = ({ mission, skill, onComp
           }`}>
             {mission.description}
           </p>
+          
+          {/* AI-generated content */}
+          {mission.isAIGenerated && (
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center gap-1 text-xs text-primary">
+                <Sparkles className="w-3 h-3" />
+                <span>AI-Personalized Mission</span>
+              </div>
+              
+              {mission.specificTasks && mission.specificTasks.length > 0 && (
+                <div className="bg-primary/5 rounded-lg p-3">
+                  <h4 className="text-xs font-medium text-secondary mb-2">Specific Tasks:</h4>
+                  <ul className="space-y-1">
+                    {mission.specificTasks.map((task, index) => (
+                      <li key={index} className="text-xs text-secondary/70 flex items-start gap-2">
+                        <span className="text-primary">•</span>
+                        <span>{task}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {mission.personalizedTips && mission.personalizedTips.length > 0 && (
+                <div className="bg-accent-purple/5 rounded-lg p-3">
+                  <h4 className="text-xs font-medium text-secondary mb-2 flex items-center gap-1">
+                    <Lightbulb className="w-3 h-3" />
+                    Personalized Tips:
+                  </h4>
+                  <ul className="space-y-1">
+                    {mission.personalizedTips.map((tip, index) => (
+                      <li key={index} className="text-xs text-secondary/70 flex items-start gap-2">
+                        <span className="text-accent-purple">•</span>
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         {mission.isCompleted && (

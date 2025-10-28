@@ -1,13 +1,14 @@
 import React from 'react';
 import { Skill } from '../types';
-import { Trophy, Target, Zap } from 'lucide-react';
+import { Trophy, Target, Zap, Loader2 } from 'lucide-react';
 
 interface SkillCardProps {
   skill: Skill;
   onGenerateMission: (skillId: string) => void;
+  isGenerating?: boolean;
 }
 
-export const SkillCard: React.FC<SkillCardProps> = ({ skill, onGenerateMission }) => {
+export const SkillCard: React.FC<SkillCardProps> = ({ skill, onGenerateMission, isGenerating = false }) => {
   const progressPercentage = ((skill.totalExperience - (skill.level - 1) ** 2 * 100) / skill.experienceToNext) * 100;
   const clampedProgress = Math.min(100, Math.max(5, progressPercentage));
 
@@ -53,10 +54,20 @@ export const SkillCard: React.FC<SkillCardProps> = ({ skill, onGenerateMission }
 
         <button
           onClick={() => onGenerateMission(skill.id)}
-          className="w-full bg-gradient-to-r from-primary to-secondary text-white py-2 px-4 rounded-lg font-medium hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2"
+          disabled={isGenerating}
+          className="w-full bg-gradient-to-r from-primary to-secondary text-white py-2 px-4 rounded-lg font-medium hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Target className="w-4 h-4" />
-          Generate Mission
+          {isGenerating ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Target className="w-4 h-4" />
+              Generate Mission
+            </>
+          )}
         </button>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Gamepad2, Zap, LogOut } from 'lucide-react';
 import { Skill, Mission, UserProgress } from './types';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -8,8 +8,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { 
   generateMissionForSkill, 
   calculateLevelFromExperience, 
-  calculateExperienceToNextLevel,
-  getSkillColors 
+  calculateExperienceToNextLevel
 } from './utils/gameLogic';
 import { SkillCard } from './components/SkillCard';
 import { MissionCard } from './components/MissionCard';
@@ -65,12 +64,16 @@ function AppContent() {
     setSkills(prev => [...prev, newSkill]);
   };
 
-  const generateMission = (skillId: string) => {
+  const generateMission = async (skillId: string) => {
     const skill = skills.find(s => s.id === skillId);
     if (!skill) return;
 
-    const newMission = generateMissionForSkill(skill);
-    setMissions(prev => [...prev, newMission]);
+    try {
+      const newMission = await generateMissionForSkill(skill, userProgress, missions);
+      setMissions(prev => [...prev, newMission]);
+    } catch (error) {
+      console.error('Failed to generate mission:', error);
+    }
   };
 
   const completeMission = (missionId: string) => {

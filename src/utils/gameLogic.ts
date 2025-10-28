@@ -1,4 +1,5 @@
-import { Skill, Mission } from '../types';
+import { Skill, Mission, UserProgress } from '../types';
+import { generatePersonalizedMission, MissionGenerationContext } from '../services/aiService';
 
 export const calculateLevelFromExperience = (experience: number): number => {
   return Math.floor(Math.sqrt(experience / 100)) + 1;
@@ -14,7 +15,73 @@ export const calculateExperienceToNextLevel = (currentExp: number): number => {
   return nextLevelExp - currentExp;
 };
 
-export const generateMissionForSkill = (skill: Skill): Mission => {
+export const generateMissionForSkill = async (
+  skill: Skill, 
+  userProgress: UserProgress, 
+  recentMissions: Mission[] = []
+): Promise<Mission> => {
+  const skillLevel = skill.level;
+  const difficulty = getDifficultyForLevel(skillLevel);
+  
+  // Try to generate AI mission first
+  try {
+    const completedMissionsThisWeek = recentMissions.filter(m => 
+      m.isCompleted && 
+      m.completedAt && 
+      new Date().getTime() - new Date(m.completedAt).getTime() < 7 * 24 * 60 * 60 * 1000
+    );
+
+    const context: MissionGenerationContext = {
+      skill,
+      userProgress,
+      recentMissions,
+      completedMissionsThisWeek
+    };
+
+    const aiMission = await generatePersonalizedMission(context);
+    
+    if (aiMission) {
+      return {
+        id: crypto.randomUUID(),
+        skillId: skill.id,
+        title: aiMission.title,
+        description: aiMission.description,
+        difficulty,
+        experience: getExperienceForDifficulty(difficulty, skillLevel),
+        timeLimit: getTimeLimitForDifficulty(difficulty),
+        isCompleted: false,
+        isRecurring: aiMission.isRecurring,
+        createdAt: new Date(),
+        specificTasks: aiMission.specificTasks,
+        personalizedTips: aiMission.personalizedTips,
+        isAIGenerated: true
+      };
+    }
+  } catch (error) {
+    console.warn('AI mission generation failed, falling back to templates:', error);
+  }
+  
+  // Fallback to template-based mission
+  const missionTemplates = getMissionTemplates(skill.name, difficulty);
+  const template = missionTemplates[Math.floor(Math.random() * missionTemplates.length)];
+  
+  return {
+    id: crypto.randomUUID(),
+    skillId: skill.id,
+    title: template.title,
+    description: template.description,
+    difficulty,
+    experience: getExperienceForDifficulty(difficulty, skillLevel),
+    timeLimit: getTimeLimitForDifficulty(difficulty),
+    isCompleted: false,
+    isRecurring: template.isRecurring || false,
+    createdAt: new Date(),
+    isAIGenerated: false
+  };
+};
+
+// Keep the original sync version for backward compatibility
+export const generateTemplateMissionForSkill = (skill: Skill): Mission => {
   const skillLevel = skill.level;
   const difficulty = getDifficultyForLevel(skillLevel);
   const missionTemplates = getMissionTemplates(skill.name, difficulty);
@@ -31,6 +98,7 @@ export const generateMissionForSkill = (skill: Skill): Mission => {
     isCompleted: false,
     isRecurring: template.isRecurring || false,
     createdAt: new Date(),
+    isAIGenerated: false
   };
 };
 

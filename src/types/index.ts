@@ -22,6 +22,10 @@ export interface Mission {
   createdAt: Date;
   completedAt?: Date;
   timeRemaining?: number;
+  // AI-generated content
+  specificTasks?: string[];
+  personalizedTips?: string[];
+  isAIGenerated?: boolean;
 }
 
 export interface UserProgress {

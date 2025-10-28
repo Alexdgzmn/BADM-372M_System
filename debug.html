@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Debug - React Test</title>
+  </head>
+  <body>
+    <div id="root">
+      <div style="padding: 20px; font-family: Arial, sans-serif;">
+        <h1>Debug: Checking if this loads...</h1>
+        <p>If you see this, the HTML is loading but React might not be.</p>
+      </div>
+    </div>
+    <script>
+      console.log('HTML loaded successfully');
+      
+      // Check if React elements are loading
+      setTimeout(() => {
+        const root = document.getElementById('root');
+        console.log('Root element content:', root.innerHTML);
+      }, 2000);
+    </script>
+  </body>
+</html>

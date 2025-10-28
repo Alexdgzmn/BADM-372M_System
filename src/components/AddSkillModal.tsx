@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 import { getSkillColors } from '../utils/gameLogic';
 
