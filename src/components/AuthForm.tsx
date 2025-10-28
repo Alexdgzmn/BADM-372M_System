@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, User, Eye, EyeOff, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Loader2, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AuthFormProps {
@@ -12,9 +12,10 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, emailVerificationSent, resendVerification, resetEmailVerificationSent } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,10 +24,10 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
 
     try {
       if (mode === 'signup') {
-        const { error } = await signUp(email, password);
+        const { error, data } = await signUp(email, password);
         if (error) {
           setMessage({ type: 'error', text: error.message });
-        } else {
+        } else if (data?.user && !data?.user?.email_confirmed_at) {
           setMessage({ 
             type: 'success', 
             text: 'Check your email for a verification link!' 
@@ -35,7 +36,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
       } else {
         const { error } = await signIn(email, password);
         if (error) {
-          setMessage({ type: 'error', text: error.message });
+          if (error.message.includes('Email not confirmed')) {
+            setMessage({ 
+              type: 'error', 
+              text: 'Please verify your email before signing in. Check your inbox for a verification link.' 
+            });
+          } else {
+            setMessage({ type: 'error', text: error.message });
+          }
         }
       }
     } catch (error) {
@@ -46,6 +54,41 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      setMessage({ type: 'error', text: 'Please enter your email address first.' });
+      return;
+    }
+
+    setResendLoading(true);
+    setMessage(null);
+
+    try {
+      const { error } = await resendVerification(email);
+      if (error) {
+        setMessage({ type: 'error', text: error.message });
+      } else {
+        setMessage({ 
+          type: 'success', 
+          text: 'Verification email sent! Check your inbox.' 
+        });
+      }
+    } catch (error) {
+      setMessage({ 
+        type: 'error', 
+        text: 'Failed to resend verification email. Please try again.' 
+      });
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
+  const handleToggleMode = () => {
+    resetEmailVerificationSent();
+    setMessage(null);
+    onToggleMode();
   };
 
   return (
@@ -141,11 +184,34 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           </button>
         </form>
 
+        {/* Resend Verification Button */}
+        {(emailVerificationSent || (message?.type === 'error' && message.text.includes('Email not confirmed'))) && (
+          <div className="mt-4 text-center">
+            <button
+              onClick={handleResendVerification}
+              disabled={resendLoading}
+              className="text-primary hover:text-secondary font-medium transition-colors duration-200 disabled:opacity-50 flex items-center justify-center gap-2 mx-auto"
+            >
+              {resendLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4" />
+                  Resend Verification Email
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
         <div className="mt-6 text-center">
           <p className="text-secondary/70">
             {mode === 'login' ? "Don't have an account? " : "Already have an account? "}
             <button
-              onClick={onToggleMode}
+              onClick={handleToggleMode}
               className="text-primary hover:text-secondary font-medium transition-colors duration-200"
             >
               {mode === 'login' ? 'Sign up' : 'Sign in'}

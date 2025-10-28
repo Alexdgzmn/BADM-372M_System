@@ -14,9 +14,19 @@ import { SkillCard } from './components/SkillCard';
 import { MissionCard } from './components/MissionCard';
 import { StatsOverview } from './components/StatsOverview';
 import { AddSkillModal } from './components/AddSkillModal';
+import { EmailVerificationCallback } from './components/EmailVerificationCallback';
 
 function AppContent() {
   const { user, loading, signOut } = useAuth();
+  
+  // Check if this is an email verification callback
+  const isEmailVerificationCallback = window.location.pathname === '/auth/callback' || 
+                                      window.location.search.includes('access_token');
+  
+  if (isEmailVerificationCallback) {
+    return <EmailVerificationCallback />;
+  }
+  
   const [skills, setSkills] = useLocalStorage<Skill[]>('system-skills', []);
   const [missions, setMissions] = useLocalStorage<Mission[]>('system-missions', []);
   const [userProgress, setUserProgress] = useLocalStorage<UserProgress>('system-progress', {
