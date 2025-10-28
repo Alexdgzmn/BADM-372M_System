@@ -21,6 +21,7 @@ import { Leaderboards } from './components/Leaderboards';
 import { SocialDashboard } from './components/SocialDashboard';
 import { CreateChallengeModal } from './components/CreateChallengeModal';
 import { ChallengeRecommendations } from './components/ChallengeRecommendations';
+import { DeploymentDebug } from './components/DeploymentDebug';
 
 function AppContent() {
   const { user, loading, signOut } = useAuth();
@@ -557,6 +558,9 @@ function AppContent() {
         onClose={() => setIsCreateChallengeModalOpen(false)}
         onCreateChallenge={handleCreateChallenge}
       />
+      
+      {/* Debug component for deployment troubleshooting */}
+      <DeploymentDebug />
     </div>
   );
 }
