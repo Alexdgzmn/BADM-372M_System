@@ -1,4 +1,4 @@
-import { Skill, Mission, UserProgress } from '../types';
+import { Skill, Mission, UserProgress, Challenge, ChallengeFormData } from '../types';
 
 export interface MissionGenerationContext {
   skill: Skill;
@@ -15,6 +15,71 @@ export interface AIGeneratedMission {
   isRecurring: boolean;
 }
 
+export interface ChallengeGenerationContext {
+  skills: string[];
+  challengeType: 'sprint' | 'quest' | 'team' | 'skill';
+  duration?: number;
+  userLevel: number;
+  communityInterests: string[];
+  activeSeasons?: string[]; // e.g., "New Year", "Summer", "Back to School"
+  trendingtopics?: string[];
+}
+
+export interface ChallengeMatchingContext {
+  userProfile: {
+    level: number;
+    skills: string[];
+    completedChallenges: string[];
+    preferences: string[];
+    currentStreak: number;
+    timeAvailability: 'low' | 'medium' | 'high';
+    learningStyle: 'visual' | 'practical' | 'collaborative' | 'independent';
+  };
+  availableChallenges: {
+    id: string;
+    title: string;
+    description: string;
+    type: 'sprint' | 'quest' | 'team' | 'skill';
+    skills: string[];
+    difficulty: 'easy' | 'medium' | 'hard';
+    duration: number;
+    participants: number;
+    successRate: number;
+    tags: string[];
+  }[];
+  friendsActivity?: {
+    challengeId: string;
+    friendsParticipating: number;
+  }[];
+  communityTrends?: {
+    challengeId: string;
+    popularityScore: number;
+    recentCompletions: number;
+  }[];
+}
+
+export interface ChallengeRecommendation {
+  challengeId: string;
+  matchScore: number; // 0-100
+  reasons: string[];
+  confidence: 'low' | 'medium' | 'high';
+  estimatedCompletionProbability: number;
+  personalizedMotivation: string;
+}
+
+export interface AIGeneratedChallenge {
+  title: string;
+  description: string;
+  type: 'sprint' | 'quest' | 'team' | 'skill';
+  duration: number;
+  skills: string[];
+  rules: string[];
+  tags: string[];
+  dailyTasks: string[];
+  motivationalMessages: string[];
+  milestoneRewards: string[];
+}
+
 /**
  * Generate a personalized mission using AI based on user context
  */
@@ -23,7 +88,9 @@ export const generatePersonalizedMission = async (
 ): Promise<AIGeneratedMission | null> => {
   try {
     // Check if API key is available
-    if (!import.meta.env.VITE_OPENAI_API_KEY) {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    
+    if (!apiKey) {
       console.warn('OpenAI API key not configured, falling back to template missions');
       return null;
     }
@@ -32,8 +99,10 @@ export const generatePersonalizedMission = async (
     
     // Build context prompt
     const contextPrompt = buildContextPrompt(skill, userProgress, recentMissions, completedMissionsThisWeek);
+    console.log('📝 Generated prompt:', contextPrompt);
     
     // Call OpenAI API directly using fetch
+    console.log('🌐 Calling OpenAI API...');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -57,23 +126,188 @@ export const generatePersonalizedMission = async (
       })
     });
 
+    console.log('📡 API Response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ OpenAI API error:', response.status, errorText);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('📊 API Response data:', data);
+    
     const aiResponse = data.choices[0]?.message?.content;
+    console.log('🤖 AI Response content:', aiResponse);
     
     if (!aiResponse) {
+      console.error('❌ No response content from AI');
       throw new Error('No response from AI');
     }
 
     // Parse the AI response
-    return parseAIResponse(aiResponse);
+    console.log('🔍 Parsing AI response...');
+    const result = parseAIResponse(aiResponse);
+    console.log('✅ Parsed result:', result);
+    
+    return result;
     
   } catch (error) {
     console.error('Error generating AI mission:', error);
     return null;
+  }
+};
+
+/**
+ * Generate a personalized challenge using AI based on community context
+ */
+export const generatePersonalizedChallenge = async (
+  context: ChallengeGenerationContext
+): Promise<AIGeneratedChallenge | null> => {
+  try {
+    // Check if API key is available
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      console.warn('OpenAI API key not configured, falling back to template challenges');
+      return null;
+    }
+
+    // Build context prompt for challenge generation
+    const contextPrompt = buildChallengeContextPrompt(context);
+    console.log('📝 Generated challenge prompt:', contextPrompt);
+    
+    // Call OpenAI API
+    console.log('🌐 Calling OpenAI API for challenge generation...');
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: getChallengeSystemPrompt()
+          },
+          {
+            role: "user",
+            content: contextPrompt
+          }
+        ],
+        temperature: 0.8, // Higher creativity for challenges
+        max_tokens: 800
+      })
+    });
+
+    console.log('📡 Challenge API Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ OpenAI API error:', response.status, errorText);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('📊 Challenge API Response data:', data);
+    
+    const aiResponse = data.choices[0]?.message?.content;
+    console.log('🤖 AI Challenge Response content:', aiResponse);
+    
+    if (!aiResponse) {
+      console.error('❌ No response content from AI');
+      throw new Error('No response from AI');
+    }
+
+    // Parse the AI response
+    console.log('🔍 Parsing AI challenge response...');
+    const result = parseAIChallengeResponse(aiResponse);
+    console.log('✅ Parsed challenge result:', result);
+    
+    return result;
+    
+  } catch (error) {
+    console.error('Error generating AI challenge:', error);
+    return null;
+  }
+};
+
+/**
+ * Generate smart challenge recommendations using AI based on user profile and available challenges
+ */
+export const generateChallengeRecommendations = async (
+  context: ChallengeMatchingContext
+): Promise<ChallengeRecommendation[] | null> => {
+  try {
+    // Check if API key is available
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      console.warn('OpenAI API key not configured, falling back to basic matching');
+      return generateBasicRecommendations(context);
+    }
+
+    // Build context prompt for recommendation generation
+    const contextPrompt = buildRecommendationContextPrompt(context);
+    console.log('📝 Generated recommendation prompt:', contextPrompt);
+    
+    // Call OpenAI API
+    console.log('🌐 Calling OpenAI API for challenge recommendations...');
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: getRecommendationSystemPrompt()
+          },
+          {
+            role: "user",
+            content: contextPrompt
+          }
+        ],
+        temperature: 0.7, // Balanced creativity for recommendations
+        max_tokens: 1000
+      })
+    });
+
+    console.log('📡 Recommendation API Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ OpenAI API error:', response.status, errorText);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('📊 Recommendation API Response data:', data);
+    
+    const aiResponse = data.choices[0]?.message?.content;
+    console.log('🤖 AI Recommendation Response content:', aiResponse);
+    
+    if (!aiResponse) {
+      console.error('❌ No response content from AI');
+      throw new Error('No response from AI');
+    }
+
+    // Parse the AI response
+    console.log('🔍 Parsing AI recommendation response...');
+    const result = parseAIRecommendationResponse(aiResponse);
+    console.log('✅ Parsed recommendation result:', result);
+    
+    return result;
+    
+  } catch (error) {
+    console.error('Error generating AI recommendations:', error);
+    // Fallback to basic matching
+    return generateBasicRecommendations(context);
   }
 };
 
@@ -120,6 +354,117 @@ REQUIREMENTS:
 }
 
 /**
+ * Build the context prompt for AI challenge generation
+ */
+function buildChallengeContextPrompt(context: ChallengeGenerationContext): string {
+  const { skills, challengeType, duration, userLevel, communityInterests, activeSeasons, trendingtopics } = context;
+  
+  const skillsList = skills.join(', ');
+  const interestsList = communityInterests.join(', ');
+  const seasonsList = activeSeasons?.join(', ') || 'None';
+  const trendsList = trendingtopics?.join(', ') || 'None';
+  
+  return `
+Generate an engaging community challenge for this context:
+
+CHALLENGE REQUIREMENTS:
+- Type: ${challengeType}
+- Target Skills: ${skillsList}
+- Duration: ${duration || 'flexible'} days
+- Target Audience Level: ${userLevel}
+
+COMMUNITY CONTEXT:
+- Popular Interests: ${interestsList}
+- Current Seasons/Events: ${seasonsList}
+- Trending Topics: ${trendsList}
+
+CHALLENGE TYPE GUIDELINES:
+${getTypeGuidelines(challengeType)}
+
+REQUIREMENTS:
+- Create an engaging, motivating challenge
+- Include specific daily/milestone tasks
+- Add community rules that encourage positive interaction
+- Include relevant hashtags/tags
+- Provide motivational messages for different stages
+- Design milestone rewards/recognition
+- Make it inclusive for different skill levels
+- Focus on growth and learning over competition
+`.trim();
+}
+
+function getTypeGuidelines(type: 'sprint' | 'quest' | 'team' | 'skill'): string {
+  switch (type) {
+    case 'sprint':
+      return '- Short, intense 1-14 day challenges\n- Daily focused tasks\n- High energy, quick wins\n- Perfect for building momentum';
+    case 'quest':
+      return '- Longer 2-12 week journeys\n- Weekly milestones\n- Gradual skill building\n- Deeper learning experiences';
+    case 'team':
+      return '- Collaborative group goals\n- Shared accountability\n- Team building elements\n- Mutual support focus';
+    case 'skill':
+      return '- Focused skill development\n- Progressive difficulty\n- Skill-specific techniques\n- Measurable improvement';
+    default:
+      return '- General challenge guidelines\n- Engaging and motivating\n- Clear goals and milestones';
+  }
+}
+
+/**
+ * Build the context prompt for AI recommendation generation
+ */
+function buildRecommendationContextPrompt(context: ChallengeMatchingContext): string {
+  const { userProfile, availableChallenges, friendsActivity, communityTrends } = context;
+  
+  const userSkills = userProfile.skills.join(', ');
+  const completedChallenges = userProfile.completedChallenges.slice(0, 5).join(', ');
+  const preferences = userProfile.preferences.join(', ');
+  
+  const challengesList = availableChallenges.map(c => 
+    `- ${c.title} (${c.type}, ${c.difficulty}, ${c.skills.join('/')}, ${c.participants} participants, ${Math.round(c.successRate * 100)}% success rate)`
+  ).join('\n');
+  
+  const friendsActivityInfo = friendsActivity?.map(f => 
+    `- Challenge ${f.challengeId}: ${f.friendsParticipating} friends participating`
+  ).join('\n') || 'No friends activity data';
+  
+  const trendsInfo = communityTrends?.map(t => 
+    `- Challenge ${t.challengeId}: Popularity ${t.popularityScore}/100, ${t.recentCompletions} recent completions`
+  ).join('\n') || 'No community trends data';
+  
+  return `
+Analyze this user profile and recommend the best challenges:
+
+USER PROFILE:
+- Level: ${userProfile.level}
+- Skills: ${userSkills}
+- Completed Challenges: ${completedChallenges || 'None yet'}
+- Preferences: ${preferences}
+- Current Streak: ${userProfile.currentStreak} days
+- Time Availability: ${userProfile.timeAvailability}
+- Learning Style: ${userProfile.learningStyle}
+
+AVAILABLE CHALLENGES:
+${challengesList}
+
+SOCIAL CONTEXT:
+Friends Activity:
+${friendsActivityInfo}
+
+Community Trends:
+${trendsInfo}
+
+REQUIREMENTS:
+- Recommend 3-5 challenges ranked by match score
+- Consider skill level compatibility (not too easy/hard)
+- Factor in learning style and time availability
+- Include social factors (friends, community momentum)
+- Provide specific reasons for each recommendation
+- Estimate completion probability for each
+- Include personalized motivation message
+- Prioritize challenges with 60-80% completion probability
+`.trim();
+}
+
+/**
  * Get the system prompt for the AI
  */
 function getSystemPrompt(): string {
@@ -155,6 +500,97 @@ Always respond with valid JSON only.
 }
 
 /**
+ * Get the system prompt for AI challenge generation
+ */
+function getChallengeSystemPrompt(): string {
+  return `
+You are an expert community challenge designer who creates engaging, motivating group learning experiences. Your goal is to design challenges that bring people together around skill development while fostering positive community interaction.
+
+RESPONSE FORMAT (JSON):
+{
+  "title": "Engaging challenge title (max 60 chars)",
+  "description": "Challenge overview and motivation (max 200 chars)",
+  "type": "sprint|quest|team|skill",
+  "duration": number_of_days,
+  "skills": ["skill1", "skill2"],
+  "rules": ["Rule 1", "Rule 2", "Rule 3"],
+  "tags": ["tag1", "tag2", "tag3"],
+  "dailyTasks": ["Day 1 task", "Day 2 task", "etc"],
+  "motivationalMessages": ["Week 1 message", "Midpoint message", "Final push message"],
+  "milestoneRewards": ["25% reward", "50% reward", "100% reward"]
+}
+
+CHALLENGE DESIGN PRINCIPLES:
+- Focus on growth and learning over competition
+- Encourage community support and collaboration
+- Make it inclusive for different skill levels
+- Include clear, actionable daily tasks
+- Provide motivation for different challenge stages
+- Create meaningful milestone celebrations
+- Foster positive interactions and encouragement
+- Ensure psychological safety and inclusivity
+
+COMMUNITY GUIDELINES:
+- Promote helping others and sharing knowledge
+- Encourage authentic progress sharing
+- Support those who are struggling
+- Celebrate small wins and effort
+- Create space for questions and learning
+
+Always respond with valid JSON only.
+`.trim();
+}
+
+/**
+ * Get the system prompt for AI recommendation generation
+ */
+function getRecommendationSystemPrompt(): string {
+  return `
+You are an expert challenge recommendation engine that analyzes user profiles and matches them with the most suitable learning challenges. Your goal is to maximize engagement, completion rates, and learning outcomes while considering personal preferences and social dynamics.
+
+RESPONSE FORMAT (JSON):
+{
+  "recommendations": [
+    {
+      "challengeId": "challenge_id",
+      "matchScore": 85,
+      "reasons": ["Reason 1", "Reason 2", "Reason 3"],
+      "confidence": "high|medium|low",
+      "estimatedCompletionProbability": 0.75,
+      "personalizedMotivation": "Personalized encouragement message"
+    }
+  ]
+}
+
+MATCHING CRITERIA:
+- Skill level alignment (avoid too easy or too hard)
+- Interest and preference matching
+- Learning style compatibility
+- Time availability consideration
+- Social factors (friends participating)
+- Past success patterns
+- Challenge type preference
+- Community trends and momentum
+
+RECOMMENDATION PRINCIPLES:
+- Prioritize user's growth and success
+- Consider completion probability (aim for 60-80%)
+- Factor in social connections and community
+- Balance challenge with achievability
+- Provide clear, motivating reasons
+- Consider user's current streak and momentum
+- Suggest variety to prevent burnout
+
+CONFIDENCE LEVELS:
+- High (90%+): Perfect skill match, strong interest alignment, friends participating
+- Medium (70-89%): Good skill match, some interest alignment, moderate social factors
+- Low (50-69%): Partial match, limited data, experimental recommendation
+
+Always respond with valid JSON containing 3-5 recommendations ranked by match score.
+`.trim();
+}
+
+/**
  * Parse the AI response into structured data
  */
 function parseAIResponse(response: string): AIGeneratedMission | null {
@@ -181,6 +617,165 @@ function parseAIResponse(response: string): AIGeneratedMission | null {
     console.error('Error parsing AI response:', error);
     return null;
   }
+}
+
+/**
+ * Parse the AI challenge response into structured data
+ */
+function parseAIChallengeResponse(response: string): AIGeneratedChallenge | null {
+  try {
+    // Clean up the response (remove markdown formatting if present)
+    const cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    const parsed = JSON.parse(cleanResponse);
+    
+    // Validate required fields
+    if (!parsed.title || !parsed.description || !parsed.type || !Array.isArray(parsed.skills)) {
+      throw new Error('Invalid challenge response format');
+    }
+    
+    return {
+      title: parsed.title.slice(0, 60), // Ensure title length limit
+      description: parsed.description.slice(0, 200), // Ensure description length limit
+      type: parsed.type,
+      duration: parsed.duration || 7, // Default to 7 days if not specified
+      skills: parsed.skills.slice(0, 3), // Max 3 skills
+      rules: parsed.rules ? parsed.rules.slice(0, 5) : [], // Max 5 rules
+      tags: parsed.tags ? parsed.tags.slice(0, 5) : [], // Max 5 tags
+      dailyTasks: parsed.dailyTasks ? parsed.dailyTasks.slice(0, parsed.duration || 7) : [],
+      motivationalMessages: parsed.motivationalMessages ? parsed.motivationalMessages.slice(0, 3) : [],
+      milestoneRewards: parsed.milestoneRewards ? parsed.milestoneRewards.slice(0, 3) : []
+    };
+    
+  } catch (error) {
+    console.error('Error parsing AI challenge response:', error);
+    return null;
+  }
+}
+
+/**
+ * Parse the AI recommendation response into structured data
+ */
+function parseAIRecommendationResponse(response: string): ChallengeRecommendation[] | null {
+  try {
+    // Clean up the response (remove markdown formatting if present)
+    const cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    const parsed = JSON.parse(cleanResponse);
+    
+    // Validate response structure
+    if (!parsed.recommendations || !Array.isArray(parsed.recommendations)) {
+      throw new Error('Invalid recommendation response format');
+    }
+    
+    return parsed.recommendations.map((rec: any): ChallengeRecommendation => ({
+      challengeId: rec.challengeId || '',
+      matchScore: Math.min(100, Math.max(0, rec.matchScore || 50)), // Ensure 0-100 range
+      reasons: Array.isArray(rec.reasons) ? rec.reasons.slice(0, 3) : [],
+      confidence: ['low', 'medium', 'high'].includes(rec.confidence) ? rec.confidence : 'medium',
+      estimatedCompletionProbability: Math.min(1, Math.max(0, rec.estimatedCompletionProbability || 0.5)),
+      personalizedMotivation: rec.personalizedMotivation || 'This challenge looks perfect for your current goals!'
+    })).slice(0, 5); // Max 5 recommendations
+    
+  } catch (error) {
+    console.error('Error parsing AI recommendation response:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate basic recommendations without AI (fallback)
+ */
+function generateBasicRecommendations(context: ChallengeMatchingContext): ChallengeRecommendation[] {
+  const { userProfile, availableChallenges, friendsActivity } = context;
+  
+  const recommendations: ChallengeRecommendation[] = [];
+  
+  // Simple scoring algorithm
+  for (const challenge of availableChallenges) {
+    let score = 0;
+    const reasons: string[] = [];
+    
+    // Skill matching (40% of score)
+    const skillMatch = challenge.skills.some(skill => userProfile.skills.includes(skill));
+    if (skillMatch) {
+      score += 40;
+      reasons.push('Matches your skills');
+    }
+    
+    // Difficulty matching (30% of score)
+    const difficultyScore = getDifficultyScore(challenge.difficulty, userProfile.level);
+    score += difficultyScore;
+    if (difficultyScore > 20) {
+      reasons.push('Appropriate difficulty level');
+    }
+    
+    // Social factors (20% of score)
+    const friendsInChallenge = friendsActivity?.find(f => f.challengeId === challenge.id);
+    if (friendsInChallenge && friendsInChallenge.friendsParticipating > 0) {
+      score += 20;
+      reasons.push(`${friendsInChallenge.friendsParticipating} friends participating`);
+    }
+    
+    // Success rate (10% of score)
+    score += challenge.successRate * 10;
+    if (challenge.successRate > 0.7) {
+      reasons.push('High success rate');
+    }
+    
+    // Time availability matching
+    if (matchesTimeAvailability(challenge, userProfile.timeAvailability)) {
+      score += 10;
+      reasons.push('Fits your schedule');
+    }
+    
+    // Avoid completed challenges
+    if (userProfile.completedChallenges.includes(challenge.id)) {
+      score -= 50;
+    }
+    
+    recommendations.push({
+      challengeId: challenge.id,
+      matchScore: Math.min(100, Math.max(0, score)),
+      reasons: reasons.slice(0, 3),
+      confidence: score > 70 ? 'high' : score > 50 ? 'medium' : 'low',
+      estimatedCompletionProbability: Math.min(0.9, Math.max(0.2, challenge.successRate)),
+      personalizedMotivation: generateBasicMotivation(challenge, userProfile)
+    });
+  }
+  
+  // Sort by score and return top 5
+  return recommendations
+    .sort((a, b) => b.matchScore - a.matchScore)
+    .slice(0, 5);
+}
+
+function getDifficultyScore(challengeDifficulty: string, userLevel: number): number {
+  const difficultyMap = { easy: 1, medium: 2, hard: 3 };
+  const challengeLevel = difficultyMap[challengeDifficulty as keyof typeof difficultyMap] || 2;
+  const userDifficultyLevel = userLevel <= 3 ? 1 : userLevel <= 7 ? 2 : 3;
+  
+  // Perfect match = 30 points, off by 1 = 20 points, off by 2 = 10 points
+  const diff = Math.abs(challengeLevel - userDifficultyLevel);
+  return Math.max(0, 30 - (diff * 10));
+}
+
+function matchesTimeAvailability(challenge: any, availability: string): boolean {
+  if (availability === 'low') return challenge.duration <= 7;
+  if (availability === 'medium') return challenge.duration <= 21;
+  return true; // High availability matches any duration
+}
+
+function generateBasicMotivation(challenge: any, userProfile: any): string {
+  const motivations = [
+    `Perfect for building your ${challenge.skills[0]} skills!`,
+    `This ${challenge.type} challenge will boost your ${userProfile.currentStreak}-day streak!`,
+    `Great opportunity to level up your expertise!`,
+    `Join ${challenge.participants} others on this learning journey!`,
+    `This challenge has a ${Math.round(challenge.successRate * 100)}% success rate!`
+  ];
+  
+  return motivations[Math.floor(Math.random() * motivations.length)];
 }
 
 /**

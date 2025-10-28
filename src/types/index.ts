@@ -35,3 +35,152 @@ export interface UserProgress {
   currentStreak: number;
   longestStreak: number;
 }
+
+// Social Feature Types
+export interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  type: 'sprint' | 'quest' | 'team' | 'skill';
+  duration: number; // days
+  startDate: Date;
+  endDate: Date;
+  skills: string[];
+  participants: ChallengeParticipant[];
+  maxParticipants?: number;
+  privacy: 'public' | 'friends' | 'private';
+  creator: {
+    id: string;
+    name: string;
+    avatar: string;
+  };
+  rules: string[];
+  tags: string[];
+  status: 'upcoming' | 'active' | 'completed' | 'cancelled';
+  progress: {
+    totalTasks: number;
+    completedTasks: number;
+    participantProgress: { [userId: string]: number };
+  };
+  isJoined?: boolean;
+}
+
+export interface ChallengeParticipant {
+  id: string;
+  userId: string;
+  name: string;
+  avatar: string;
+  joinedAt: Date;
+  progress: number; // 0-100
+  tasksCompleted: number;
+  lastActivity: Date;
+  isActive: boolean;
+}
+
+export interface SocialPost {
+  id: string;
+  userId: string;
+  user: {
+    id: string;
+    name: string;
+    avatar: string;
+    level: number;
+    skill?: string;
+  };
+  type: 'progress' | 'achievement' | 'struggle' | 'tip' | 'challenge_update';
+  content: string;
+  image?: string;
+  timestamp: Date;
+  likes: number;
+  comments: SocialComment[];
+  isLiked: boolean;
+  tags?: string[];
+  challengeId?: string;
+  challengeName?: string;
+  skillId?: string;
+  missionId?: string;
+  visibility: 'public' | 'friends' | 'challenge_members';
+}
+
+export interface SocialComment {
+  id: string;
+  postId: string;
+  userId: string;
+  user: {
+    id: string;
+    name: string;
+    avatar: string;
+    level: number;
+  };
+  content: string;
+  timestamp: Date;
+  likes: number;
+  isLiked: boolean;
+  parentCommentId?: string; // For nested replies
+}
+
+export interface SocialActivity {
+  id: string;
+  type: 'friend_achievement' | 'challenge_invite' | 'new_follower' | 'challenge_complete' | 'streak_milestone' | 'level_up' | 'challenge_join';
+  userId: string;
+  user: {
+    id: string;
+    name: string;
+    avatar: string;
+  };
+  targetUserId?: string; // For activities involving another user
+  message: string;
+  timestamp: Date;
+  metadata?: {
+    challengeId?: string;
+    skillId?: string;
+    level?: number;
+    streak?: number;
+    achievement?: string;
+  };
+  isRead: boolean;
+  actionUrl?: string;
+}
+
+export interface LeaderboardUser {
+  id: string;
+  name: string;
+  avatar: string;
+  level: number;
+  xp: number;
+  weeklyXP: number;
+  streak: number;
+  completedMissions: number;
+  rank: number;
+  badges: string[];
+  favoriteSkill: string;
+  isCurrentUser?: boolean;
+}
+
+export interface SocialStats {
+  totalFriends: number;
+  activeChallenges: number;
+  weeklyRank: number;
+  totalRankImprovement: number;
+}
+
+export interface QuickChallenge {
+  id: string;
+  title: string;
+  participants: number;
+  timeLeft: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+}
+
+export interface ChallengeFormData {
+  title: string;
+  description: string;
+  type: 'sprint' | 'quest' | 'team' | 'skill';
+  duration: number;
+  skills: string[];
+  privacy: 'public' | 'friends' | 'private';
+  maxParticipants?: number;
+  startDate: Date;
+  rules: string[];
+  tags: string[];
+}

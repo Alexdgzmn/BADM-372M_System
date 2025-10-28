@@ -24,24 +24,24 @@ export const AuthPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-accent-light to-primary/10">
+    <div className="min-h-screen bg-accent-light">
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center min-h-screen">
           {/* Left side - Branding and features */}
           <div className="space-y-8">
             <div className="text-center lg:text-left">
               <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
-                <div className="bg-gradient-to-br from-primary to-secondary p-3 rounded-xl">
+                <div className="bg-primary p-3 rounded-xl">
                   <Gamepad2 className="w-8 h-8 text-white" />
                 </div>
-                <h1 className="text-4xl font-bold text-secondary">
+                <h1 className="text-4xl font-bold text-white">
                   THE SYSTEM
                 </h1>
               </div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-secondary mb-4">
+              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
                 Level up what you love
               </h2>
-              <p className="text-xl text-secondary/80 mb-8">
+              <p className="text-xl text-white/80 mb-8">
                 Turn your habits and interests into missions. Track progress, build streaks, and level up in a playful, game-inspired way.
               </p>
             </div>
@@ -51,14 +51,14 @@ export const AuthPage: React.FC = () => {
                 const Icon = feature.icon;
                 return (
                   <div key={index} className="flex items-start gap-4">
-                    <div className="bg-gradient-to-br from-primary to-secondary p-2 rounded-lg flex-shrink-0">
+                    <div className="bg-primary p-2 rounded-lg flex-shrink-0">
                       <Icon className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-secondary mb-1">
+                      <h3 className="text-lg font-semibold text-white mb-1">
                         {feature.title}
                       </h3>
-                      <p className="text-secondary/70">
+                      <p className="text-white/70">
                         {feature.description}
                       </p>
                     </div>
@@ -70,11 +70,11 @@ export const AuthPage: React.FC = () => {
             <div className="bg-white rounded-xl p-6 shadow-sm border border-secondary/10">
               <div className="flex items-center gap-4">
                 <div className="bg-primary/20 p-3 rounded-full">
-                  <Zap className="w-6 h-6 text-secondary" />
+                  <Zap className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-secondary">Ready to start?</h3>
-                  <p className="text-sm text-secondary/70">
+                  <h3 className="font-semibold text-primary">Ready to start?</h3>
+                  <p className="text-sm text-gray-600">
                     Join thousands of users already leveling up their skills
                   </p>
                 </div>

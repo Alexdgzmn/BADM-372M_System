@@ -56,9 +56,11 @@ export const generateMissionForSkill = async (
         personalizedTips: aiMission.personalizedTips,
         isAIGenerated: true
       };
+    } else {
+      console.log('⚠️ AI mission generation returned null');
     }
   } catch (error) {
-    console.warn('AI mission generation failed, falling back to templates:', error);
+    console.warn('❌ AI mission generation failed, falling back to templates:', error);
   }
   
   // Fallback to template-based mission

@@ -1,0 +1,548 @@
+// Database service functions for community features
+import { supabase } from '../lib/database'
+
+export interface SocialPost {
+  id: string
+  user_id: string
+  type: 'progress' | 'achievement' | 'tip' | 'question' | 'celebration' | 'challenge'
+  content: string
+  image_url?: string
+  visibility: 'public' | 'friends' | 'private'
+  likes_count: number
+  comments_count: number
+  shares_count: number
+  tags: string[]
+  mentioned_users: string[]
+  linked_challenge_id?: string
+  linked_skill_id?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface PostComment {
+  id: string
+  post_id: string
+  user_id: string
+  parent_comment_id?: string
+  content: string
+  likes_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface PostWithDetails extends SocialPost {
+  user: {
+    id: string
+    display_name: string
+    avatar_url: string
+    level?: number
+    skill?: string
+  }
+  comments: (PostComment & {
+    user: {
+      id: string
+      display_name: string
+      avatar_url: string
+      level?: number
+    }
+    is_liked?: boolean
+  })[]
+  is_liked: boolean
+  linked_challenge?: {
+    id: string
+    title: string
+  }
+  linked_skill?: {
+    id: string
+    name: string
+  }
+}
+
+export interface UserRelationship {
+  id: string
+  follower_id: string
+  following_id: string
+  relationship_type: 'follow' | 'friend' | 'block'
+  status: 'pending' | 'accepted' | 'rejected'
+  created_at: string
+  updated_at: string
+}
+
+export interface SocialActivity {
+  id: string
+  user_id: string
+  actor_user_id: string
+  activity_type: 'friend_achievement' | 'challenge_invite' | 'new_follower' | 'challenge_complete' | 'streak_milestone' | 'post_like' | 'post_comment'
+  message: string
+  related_post_id?: string
+  related_challenge_id?: string
+  is_read: boolean
+  created_at: string
+}
+
+// ============================================================================
+// COMMUNITY SERVICE
+// ============================================================================
+
+export const communityService = {
+  // Get public posts with user details
+  async getPublicPosts(options?: {
+    limit?: number
+    offset?: number
+    type?: string
+    userId?: string
+  }): Promise<PostWithDetails[]> {
+    try {
+      let query = supabase
+        .from('social_posts')
+        .select(`
+          *,
+          users!social_posts_user_id_fkey(
+            id,
+            display_name,
+            avatar_url
+          ),
+          post_comments(
+            *,
+            users!post_comments_user_id_fkey(
+              id,
+              display_name,
+              avatar_url
+            )
+          ),
+          challenges!social_posts_linked_challenge_id_fkey(
+            id,
+            title
+          ),
+          user_skills!social_posts_linked_skill_id_fkey(
+            id,
+            name
+          )
+        `)
+        .eq('visibility', 'public')
+
+      if (options?.type) {
+        query = query.eq('type', options.type)
+      }
+
+      if (options?.offset) {
+        query = query.range(options.offset, (options.offset + (options?.limit || 20)) - 1)
+      } else if (options?.limit) {
+        query = query.limit(options.limit)
+      }
+
+      query = query.order('created_at', { ascending: false })
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      const posts = await Promise.all((data || []).map(async (post) => {
+        // Check if current user liked the post
+        let isLiked = false
+        if (options?.userId) {
+          const { data: likeData } = await supabase
+            .from('post_likes')
+            .select('id')
+            .eq('post_id', post.id)
+            .eq('user_id', options.userId)
+            .single()
+          
+          isLiked = !!likeData
+        }
+
+        // Check comment likes for current user
+        const commentsWithLikes = await Promise.all(post.post_comments.map(async (comment: any) => {
+          let isCommentLiked = false
+          if (options?.userId) {
+            const { data: commentLikeData } = await supabase
+              .from('comment_likes')
+              .select('id')
+              .eq('comment_id', comment.id)
+              .eq('user_id', options.userId)
+              .single()
+            
+            isCommentLiked = !!commentLikeData
+          }
+
+          return {
+            ...comment,
+            user: comment.users,
+            is_liked: isCommentLiked
+          }
+        }))
+
+        return {
+          ...post,
+          user: post.users,
+          comments: commentsWithLikes,
+          is_liked: isLiked,
+          linked_challenge: post.challenges,
+          linked_skill: post.user_skills
+        }
+      }))
+
+      return posts
+    } catch (error) {
+      console.error('Error fetching public posts:', error)
+      return []
+    }
+  },
+
+  // Create a new post
+  async createPost(userId: string, postData: {
+    type: 'progress' | 'achievement' | 'tip' | 'question' | 'celebration' | 'challenge'
+    content: string
+    image_url?: string
+    visibility?: 'public' | 'friends' | 'private'
+    tags?: string[]
+    mentioned_users?: string[]
+    linked_challenge_id?: string
+    linked_skill_id?: string
+  }) {
+    try {
+      const { data, error } = await supabase
+        .from('social_posts')
+        .insert({
+          user_id: userId,
+          type: postData.type,
+          content: postData.content,
+          image_url: postData.image_url,
+          visibility: postData.visibility || 'public',
+          tags: postData.tags || [],
+          mentioned_users: postData.mentioned_users || [],
+          linked_challenge_id: postData.linked_challenge_id,
+          linked_skill_id: postData.linked_skill_id,
+          likes_count: 0,
+          comments_count: 0,
+          shares_count: 0
+        })
+        .select()
+        .single()
+
+      return { data, error }
+    } catch (error) {
+      return { data: null, error }
+    }
+  },
+
+  // Like/unlike a post
+  async togglePostLike(postId: string, userId: string) {
+    try {
+      // Check if already liked
+      const { data: existingLike } = await supabase
+        .from('post_likes')
+        .select('id')
+        .eq('post_id', postId)
+        .eq('user_id', userId)
+        .single()
+
+      if (existingLike) {
+        // Unlike the post
+        await supabase
+          .from('post_likes')
+          .delete()
+          .eq('id', existingLike.id)
+
+        // Decrement likes count
+        await supabase.rpc('decrement_post_likes', { post_id: postId })
+
+        return { data: { liked: false }, error: null }
+      } else {
+        // Like the post
+        await supabase
+          .from('post_likes')
+          .insert({
+            post_id: postId,
+            user_id: userId
+          })
+
+        // Increment likes count
+        await supabase.rpc('increment_post_likes', { post_id: postId })
+
+        return { data: { liked: true }, error: null }
+      }
+    } catch (error) {
+      return { data: null, error }
+    }
+  },
+
+  // Add a comment to a post
+  async addComment(postId: string, userId: string, content: string, parentCommentId?: string) {
+    try {
+      const { data, error } = await supabase
+        .from('post_comments')
+        .insert({
+          post_id: postId,
+          user_id: userId,
+          content,
+          parent_comment_id: parentCommentId,
+          likes_count: 0
+        })
+        .select(`
+          *,
+          users!post_comments_user_id_fkey(
+            id,
+            display_name,
+            avatar_url
+          )
+        `)
+        .single()
+
+      if (!error) {
+        // Increment comments count
+        await supabase.rpc('increment_post_comments', { post_id: postId })
+      }
+
+      return { data, error }
+    } catch (error) {
+      return { data: null, error }
+    }
+  },
+
+  // Like/unlike a comment
+  async toggleCommentLike(commentId: string, userId: string) {
+    try {
+      // Check if already liked
+      const { data: existingLike } = await supabase
+        .from('comment_likes')
+        .select('id')
+        .eq('comment_id', commentId)
+        .eq('user_id', userId)
+        .single()
+
+      if (existingLike) {
+        // Unlike the comment
+        await supabase
+          .from('comment_likes')
+          .delete()
+          .eq('id', existingLike.id)
+
+        // Decrement likes count
+        await supabase.rpc('decrement_comment_likes', { comment_id: commentId })
+
+        return { data: { liked: false }, error: null }
+      } else {
+        // Like the comment
+        await supabase
+          .from('comment_likes')
+          .insert({
+            comment_id: commentId,
+            user_id: userId
+          })
+
+        // Increment likes count
+        await supabase.rpc('increment_comment_likes', { comment_id: commentId })
+
+        return { data: { liked: true }, error: null }
+      }
+    } catch (error) {
+      return { data: null, error }
+    }
+  },
+
+  // Follow/unfollow a user
+  async toggleFollow(followerId: string, followingId: string) {
+    try {
+      // Check if already following
+      const { data: existingRelation } = await supabase
+        .from('user_relationships')
+        .select('*')
+        .eq('follower_id', followerId)
+        .eq('following_id', followingId)
+        .single()
+
+      if (existingRelation) {
+        if (existingRelation.status === 'accepted') {
+          // Unfollow
+          await supabase
+            .from('user_relationships')
+            .delete()
+            .eq('id', existingRelation.id)
+
+          return { data: { following: false }, error: null }
+        } else {
+          return { data: { following: false }, error: null }
+        }
+      } else {
+        // Follow (automatically accepted for now)
+        await supabase
+          .from('user_relationships')
+          .insert({
+            follower_id: followerId,
+            following_id: followingId,
+            relationship_type: 'follow',
+            status: 'accepted'
+          })
+
+        // Create activity notification
+        await this.createActivity(followingId, followerId, 'new_follower', 'started following you')
+
+        return { data: { following: true }, error: null }
+      }
+    } catch (error) {
+      return { data: null, error }
+    }
+  },
+
+  // Get user's social activities
+  async getUserActivities(userId: string, limit: number = 20): Promise<SocialActivity[]> {
+    try {
+      const { data, error } = await supabase
+        .from('social_activities')
+        .select(`
+          *,
+          users!social_activities_actor_user_id_fkey(
+            id,
+            display_name,
+            avatar_url
+          )
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      if (error) throw error
+
+      return data?.map(activity => ({
+        ...activity,
+        actor_user: activity.users
+      })) || []
+    } catch (error) {
+      console.error('Error fetching user activities:', error)
+      return []
+    }
+  },
+
+  // Create a social activity
+  async createActivity(userId: string, actorUserId: string, type: SocialActivity['activity_type'], message: string, relatedIds?: {
+    postId?: string
+    challengeId?: string
+  }) {
+    try {
+      const { data, error } = await supabase
+        .from('social_activities')
+        .insert({
+          user_id: userId,
+          actor_user_id: actorUserId,
+          activity_type: type,
+          message,
+          related_post_id: relatedIds?.postId,
+          related_challenge_id: relatedIds?.challengeId,
+          is_read: false
+        })
+        .select()
+        .single()
+
+      return { data, error }
+    } catch (error) {
+      return { data: null, error }
+    }
+  },
+
+  // Mark activities as read
+  async markActivitiesAsRead(userId: string, activityIds?: string[]) {
+    try {
+      let query = supabase
+        .from('social_activities')
+        .update({ is_read: true })
+        .eq('user_id', userId)
+
+      if (activityIds) {
+        query = query.in('id', activityIds)
+      }
+
+      const { error } = await query
+
+      return { error }
+    } catch (error) {
+      return { error }
+    }
+  },
+
+  // Get user's friends/followers
+  async getUserRelationships(userId: string, type: 'following' | 'followers' = 'following') {
+    try {
+      let query
+      
+      if (type === 'following') {
+        query = supabase
+          .from('user_relationships')
+          .select(`
+            *,
+            users!user_relationships_following_id_fkey(
+              id,
+              display_name,
+              avatar_url
+            )
+          `)
+          .eq('follower_id', userId)
+          .eq('status', 'accepted')
+      } else {
+        query = supabase
+          .from('user_relationships')
+          .select(`
+            *,
+            users!user_relationships_follower_id_fkey(
+              id,
+              display_name,
+              avatar_url
+            )
+          `)
+          .eq('following_id', userId)
+          .eq('status', 'accepted')
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      return data?.map(relation => ({
+        ...relation,
+        user: relation.users
+      })) || []
+    } catch (error) {
+      console.error('Error fetching user relationships:', error)
+      return []
+    }
+  },
+
+  // Search posts
+  async searchPosts(query: string, filters?: {
+    type?: string
+    userId?: string
+  }) {
+    try {
+      let dbQuery = supabase
+        .from('social_posts')
+        .select(`
+          *,
+          users!social_posts_user_id_fkey(
+            id,
+            display_name,
+            avatar_url
+          )
+        `)
+        .eq('visibility', 'public')
+        .ilike('content', `%${query}%`)
+
+      if (filters?.type) {
+        dbQuery = dbQuery.eq('type', filters.type)
+      }
+
+      dbQuery = dbQuery.order('created_at', { ascending: false })
+
+      const { data, error } = await dbQuery
+
+      if (error) throw error
+
+      return data?.map(post => ({
+        ...post,
+        user: post.users
+      })) || []
+    } catch (error) {
+      console.error('Error searching posts:', error)
+      return []
+    }
+  }
+}

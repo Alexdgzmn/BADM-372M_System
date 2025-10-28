@@ -95,13 +95,13 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
     <div className="w-full max-w-md mx-auto">
       <div className="bg-white rounded-2xl shadow-xl border border-secondary/10 p-8">
         <div className="text-center mb-8">
-          <div className="bg-gradient-to-br from-primary to-secondary w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="bg-primary w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <User className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-secondary mb-2">
+          <h2 className="text-2xl font-bold text-primary mb-2">
             {mode === 'login' ? 'Welcome Back' : 'Join THE SYSTEM'}
           </h2>
-          <p className="text-secondary/70">
+          <p className="text-gray-600">
             {mode === 'login' 
               ? 'Sign in to continue your growth journey' 
               : 'Start leveling up your skills today'
@@ -126,7 +126,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-secondary mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-primary mb-2">
               Email Address
             </label>
             <div className="relative">
@@ -144,7 +144,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-secondary mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-primary mb-2">
               Password
             </label>
             <div className="relative">
@@ -177,7 +177,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-primary to-secondary text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             {mode === 'login' ? 'Sign In' : 'Create Account'}

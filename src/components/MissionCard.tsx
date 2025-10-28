@@ -62,7 +62,7 @@ export const MissionCard: React.FC<MissionCardProps> = ({ mission, skill, onComp
               style={{ backgroundColor: skill.color }}
             />
             <h3 className={`text-lg font-semibold ${
-              mission.isCompleted ? 'text-secondary/60' : 'text-secondary'
+              mission.isCompleted ? 'text-gray-500' : 'text-primary'
             }`}>
               {mission.title}
             </h3>
@@ -71,7 +71,7 @@ export const MissionCard: React.FC<MissionCardProps> = ({ mission, skill, onComp
             )}
           </div>
           <p className={`text-sm ${
-            mission.isCompleted ? 'text-secondary/50' : 'text-secondary/70'
+            mission.isCompleted ? 'text-gray-400' : 'text-gray-600'
           }`}>
             {mission.description}
           </p>
@@ -86,10 +86,10 @@ export const MissionCard: React.FC<MissionCardProps> = ({ mission, skill, onComp
               
               {mission.specificTasks && mission.specificTasks.length > 0 && (
                 <div className="bg-primary/5 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-secondary mb-2">Specific Tasks:</h4>
+                  <h4 className="text-xs font-medium text-primary mb-2">Specific Tasks:</h4>
                   <ul className="space-y-1">
                     {mission.specificTasks.map((task, index) => (
-                      <li key={index} className="text-xs text-secondary/70 flex items-start gap-2">
+                      <li key={index} className="text-xs text-gray-600 flex items-start gap-2">
                         <span className="text-primary">•</span>
                         <span>{task}</span>
                       </li>
@@ -100,13 +100,13 @@ export const MissionCard: React.FC<MissionCardProps> = ({ mission, skill, onComp
               
               {mission.personalizedTips && mission.personalizedTips.length > 0 && (
                 <div className="bg-accent-purple/5 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-secondary mb-2 flex items-center gap-1">
+                  <h4 className="text-xs font-medium text-primary mb-2 flex items-center gap-1">
                     <Lightbulb className="w-3 h-3" />
                     Personalized Tips:
                   </h4>
                   <ul className="space-y-1">
                     {mission.personalizedTips.map((tip, index) => (
-                      <li key={index} className="text-xs text-secondary/70 flex items-start gap-2">
+                      <li key={index} className="text-xs text-gray-600 flex items-start gap-2">
                         <span className="text-accent-purple">•</span>
                         <span>{tip}</span>
                       </li>
@@ -127,11 +127,11 @@ export const MissionCard: React.FC<MissionCardProps> = ({ mission, skill, onComp
         <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getDifficultyColor(mission.difficulty)}`}>
           {mission.difficulty}
         </div>
-        <div className="flex items-center gap-1 text-sm text-secondary/70">
+        <div className="flex items-center gap-1 text-sm text-gray-600">
           <Award className="w-4 h-4" />
           <span>{mission.experience} XP</span>
         </div>
-        <div className="flex items-center gap-1 text-sm text-secondary/70">
+        <div className="flex items-center gap-1 text-sm text-gray-600">
           <Clock className="w-4 h-4" />
           <span>{mission.timeLimit}m limit</span>
         </div>
@@ -140,9 +140,9 @@ export const MissionCard: React.FC<MissionCardProps> = ({ mission, skill, onComp
       {!mission.isCompleted && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-secondary/70">Time Remaining:</span>
+            <span className="text-sm text-gray-600">Time Remaining:</span>
             <div className={`text-sm font-medium ${
-              timeRemaining === 0 ? 'text-red-600' : timeRemaining < 300 ? 'text-orange-600' : 'text-secondary'
+              timeRemaining === 0 ? 'text-red-600' : timeRemaining < 300 ? 'text-orange-600' : 'text-primary'
             }`}>
               {formatTime(timeRemaining)}
               {timeRemaining === 0 && (

@@ -44,22 +44,22 @@ export const EmailVerificationCallback = () => {
   }, [user]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-accent-light to-primary/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-accent-light flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl border border-secondary/10 p-8 max-w-md w-full text-center">
         {status === 'loading' && (
           <>
             <Loader2 className="w-16 h-16 text-primary mx-auto mb-4 animate-spin" />
-            <h2 className="text-xl font-bold text-secondary mb-2">Verifying Email</h2>
-            <p className="text-secondary/70">Please wait while we verify your email address...</p>
+            <h2 className="text-xl font-bold text-primary mb-2">Verifying Email</h2>
+            <p className="text-gray-600">Please wait while we verify your email address...</p>
           </>
         )}
         
         {status === 'success' && (
           <>
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-secondary mb-2">Email Verified!</h2>
-            <p className="text-secondary/70 mb-4">{message}</p>
-            <div className="text-sm text-secondary/60">
+            <h2 className="text-xl font-bold text-primary mb-2">Email Verified!</h2>
+            <p className="text-gray-600 mb-4">{message}</p>
+            <div className="text-sm text-gray-500">
               Redirecting to your dashboard...
             </div>
           </>
@@ -68,11 +68,11 @@ export const EmailVerificationCallback = () => {
         {status === 'error' && (
           <>
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-secondary mb-2">Verification Failed</h2>
-            <p className="text-secondary/70 mb-4">{message}</p>
+            <h2 className="text-xl font-bold text-primary mb-2">Verification Failed</h2>
+            <p className="text-gray-600 mb-4">{message}</p>
             <button
               onClick={() => window.location.href = '/'}
-              className="bg-gradient-to-r from-primary to-secondary text-white px-6 py-2 rounded-lg font-medium hover:opacity-90 transition-all duration-200"
+              className="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all duration-200"
             >
               Return to Login
             </button>

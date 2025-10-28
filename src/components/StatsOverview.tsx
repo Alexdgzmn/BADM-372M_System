@@ -43,8 +43,8 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ progress }) => {
             <div className={`w-10 h-10 rounded-lg ${stat.color} flex items-center justify-center mb-2`}>
               <Icon className="w-5 h-5" />
             </div>
-            <div className="text-2xl font-bold text-secondary mb-1">{stat.value}</div>
-            <div className="text-sm text-secondary/70">{stat.label}</div>
+            <div className="text-2xl font-bold text-primary mb-1">{stat.value}</div>
+            <div className="text-sm text-gray-600">{stat.label}</div>
           </div>
         );
       })}
