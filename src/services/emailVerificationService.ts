@@ -65,7 +65,7 @@ class EmailVerificationService {
   async verifyEmail(token: string): Promise<{ success: boolean; error?: string; message?: string }> {
     try {
       const { data, error } = await supabase
-        .rpc('confirm_email_verification', { verification_token: token });
+        .rpc('confirm_email_verification', { token_param: token });
 
       if (error) {
         console.error('Error verifying email:', error);

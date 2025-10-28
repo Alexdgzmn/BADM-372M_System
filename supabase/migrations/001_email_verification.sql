@@ -73,7 +73,7 @@ CREATE TRIGGER on_auth_user_created
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Function to handle email verification confirmation
-CREATE OR REPLACE FUNCTION public.confirm_email_verification(verification_token TEXT)
+CREATE OR REPLACE FUNCTION public.confirm_email_verification(token_param TEXT)
 RETURNS JSONB AS $$
 DECLARE
     verification_record email_verifications%ROWTYPE;
@@ -82,7 +82,7 @@ BEGIN
     -- Find the verification record
     SELECT * INTO verification_record
     FROM email_verifications
-    WHERE verification_token = $1
+    WHERE verification_token = token_param
     AND verified_at IS NULL
     AND expires_at > NOW();
 
