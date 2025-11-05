@@ -41,7 +41,7 @@ export const AuthPage: React.FC = () => {
               <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4 font-headline">
                 Level up what you love
               </h2>
-              <p className="text-lg text-white/90 mb-8 font-body">
+              <p className="text-xl text-white/90 mb-8 font-body">
                 Turn your habits and interests into missions. Track progress, build streaks, and level up in a playful, game-inspired way.
               </p>
             </div>
@@ -55,10 +55,10 @@ export const AuthPage: React.FC = () => {
                       <Icon className="w-5 h-5 text-secondary" />
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-white mb-1 font-headline">
+                      <h3 className="text-lg font-semibold text-white mb-1 font-headline">
                         {feature.title}
                       </h3>
-                      <p className="text-sm text-white/80 font-body">
+                      <p className="text-white/80 font-body">
                         {feature.description}
                       </p>
                     </div>
