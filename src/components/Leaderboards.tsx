@@ -47,7 +47,8 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
         if (selectedSkill === 'all') {
           sortedData = [...users];
         } else {
-          sortedData = users.filter(user => user.favoriteSkill === selectedSkill);
+          sortedData = users.filter(user => user.favoriteSkill === selectedSkill)
+            .sort((a, b) => b.xp - a.xp);
         }
         break;
       default:
