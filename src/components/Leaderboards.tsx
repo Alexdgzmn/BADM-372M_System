@@ -34,17 +34,31 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
   const skills = ['all', 'JavaScript', 'Python', 'Design', 'Fitness', 'Music', 'Languages'];
 
   const getTabData = () => {
+    let sortedData: LeaderboardUser[];
+    
     switch (activeTab) {
       case 'friends':
-        return [...friends, currentUser].sort((a, b) => b.xp - a.xp);
+        sortedData = [...friends, currentUser].sort((a, b) => b.xp - a.xp);
+        break;
       case 'weekly':
-        return users.sort((a, b) => b.weeklyXP - a.weeklyXP);
+        sortedData = [...users].sort((a, b) => b.weeklyXP - a.weeklyXP);
+        break;
       case 'skills':
-        if (selectedSkill === 'all') return users;
-        return users.filter(user => user.favoriteSkill === selectedSkill);
+        if (selectedSkill === 'all') {
+          sortedData = [...users];
+        } else {
+          sortedData = users.filter(user => user.favoriteSkill === selectedSkill);
+        }
+        break;
       default:
-        return users;
+        sortedData = [...users];
     }
+    
+    // Recalculate ranks based on current sort order
+    return sortedData.map((user, index) => ({
+      ...user,
+      rank: index + 1
+    }));
   };
 
   const getRankColor = (rank: number) => {
@@ -177,8 +191,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
 
         {/* Rankings List */}
         <div className="divide-y divide-secondary/5">
-          {tabData.map((user, index) => {
-            const displayRank = index + 1;
+          {tabData.map((user) => {
             const isCurrentUser = user.id === currentUser.id;
             
             return (
@@ -192,7 +205,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
               >
                 {/* Rank */}
                 <div className="flex items-center justify-center w-10">
-                  {getRankIcon(displayRank)}
+                  {getRankIcon(user.rank)}
                 </div>
 
                 {/* User Info */}
