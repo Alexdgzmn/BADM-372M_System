@@ -97,24 +97,24 @@ export const communityService = {
         .from('social_posts')
         .select(`
           *,
-          users!social_posts_user_id_fkey(
-            id,
+          user_profiles(
+            user_id,
             display_name,
             avatar_url
           ),
           post_comments(
             *,
-            users!post_comments_user_id_fkey(
-              id,
+            user_profiles(
+              user_id,
               display_name,
               avatar_url
             )
           ),
-          challenges!social_posts_linked_challenge_id_fkey(
+          challenges(
             id,
             title
           ),
-          user_skills!social_posts_linked_skill_id_fkey(
+          user_skills(
             id,
             name
           )
@@ -167,14 +167,25 @@ export const communityService = {
 
           return {
             ...comment,
-            user: comment.users,
+            user: {
+              id: comment.user_profiles?.user_id || '',
+              display_name: comment.user_profiles?.display_name || 'Unknown',
+              avatar_url: comment.user_profiles?.avatar_url || '',
+              level: 1
+            },
             is_liked: isCommentLiked
           }
         }))
 
         return {
           ...post,
-          user: post.users,
+          user: {
+            id: post.user_profiles?.user_id || '',
+            display_name: post.user_profiles?.display_name || 'Unknown',
+            avatar_url: post.user_profiles?.avatar_url || '',
+            level: 1,
+            skill: ''
+          },
           comments: commentsWithLikes,
           is_liked: isLiked,
           linked_challenge: post.challenges,
@@ -281,8 +292,8 @@ export const communityService = {
         })
         .select(`
           *,
-          users!post_comments_user_id_fkey(
-            id,
+          user_profiles(
+            user_id,
             display_name,
             avatar_url
           )
@@ -341,42 +352,60 @@ export const communityService = {
     }
   },
 
-  // Follow/unfollow a user
+  // Follow/unfollow a user (using friends table)
   async toggleFollow(followerId: string, followingId: string) {
     try {
-      // Check if already following
-      const { data: existingRelation } = await supabase
-        .from('user_relationships')
+      // Check if already friends
+      const { data: existingFriend } = await supabase
+        .from('friends')
         .select('*')
-        .eq('follower_id', followerId)
-        .eq('following_id', followingId)
+        .eq('user_id', followerId)
+        .eq('friend_user_id', followingId)
         .single()
 
-      if (existingRelation) {
-        if (existingRelation.status === 'accepted') {
-          // Unfollow
-          await supabase
-            .from('user_relationships')
-            .delete()
-            .eq('id', existingRelation.id)
-
-          return { data: { following: false }, error: null }
-        } else {
-          return { data: { following: false }, error: null }
-        }
-      } else {
-        // Follow (automatically accepted for now)
+      if (existingFriend) {
+        // Unfollow - remove friendship
         await supabase
-          .from('user_relationships')
-          .insert({
-            follower_id: followerId,
-            following_id: followingId,
-            relationship_type: 'follow',
-            status: 'accepted'
-          })
+          .from('friends')
+          .delete()
+          .eq('id', existingFriend.id)
+
+        return { data: { following: false }, error: null }
+      } else {
+        // Check if there's a pending friend request
+        const { data: pendingRequest } = await supabase
+          .from('friend_requests')
+          .select('*')
+          .eq('sender_id', followingId)
+          .eq('receiver_id', followerId)
+          .eq('status', 'pending')
+          .single()
+
+        if (pendingRequest) {
+          // Accept the friend request
+          await supabase
+            .from('friend_requests')
+            .update({ status: 'accepted' })
+            .eq('id', pendingRequest.id)
+
+          // Create bidirectional friendship
+          await supabase.from('friends').insert([
+            { user_id: followerId, friend_user_id: followingId },
+            { user_id: followingId, friend_user_id: followerId }
+          ])
+        } else {
+          // Send a friend request
+          await supabase
+            .from('friend_requests')
+            .insert({
+              sender_id: followerId,
+              receiver_id: followingId,
+              status: 'pending'
+            })
+        }
 
         // Create activity notification
-        await this.createActivity(followingId, followerId, 'new_follower', 'started following you')
+        await this.createActivity(followingId, followerId, 'new_follower', 'sent you a friend request')
 
         return { data: { following: true }, error: null }
       }
@@ -392,8 +421,8 @@ export const communityService = {
         .from('social_activities')
         .select(`
           *,
-          users!social_activities_actor_user_id_fkey(
-            id,
+          user_profiles(
+            user_id,
             display_name,
             avatar_url
           )
@@ -406,7 +435,7 @@ export const communityService = {
 
       return data?.map(activity => ({
         ...activity,
-        actor_user: activity.users
+        actor_user: activity.user_profiles
       })) || []
     } catch (error) {
       console.error('Error fetching user activities:', error)
@@ -460,49 +489,30 @@ export const communityService = {
     }
   },
 
-  // Get user's friends/followers
+  // Get user's friends
   async getUserRelationships(userId: string, type: 'following' | 'followers' = 'following') {
     try {
-      let query
-      
-      if (type === 'following') {
-        query = supabase
-          .from('user_relationships')
-          .select(`
-            *,
-            users!user_relationships_following_id_fkey(
-              id,
-              display_name,
-              avatar_url
-            )
-          `)
-          .eq('follower_id', userId)
-          .eq('status', 'accepted')
-      } else {
-        query = supabase
-          .from('user_relationships')
-          .select(`
-            *,
-            users!user_relationships_follower_id_fkey(
-              id,
-              display_name,
-              avatar_url
-            )
-          `)
-          .eq('following_id', userId)
-          .eq('status', 'accepted')
-      }
-
-      const { data, error } = await query
+      // For friends table, both types return the same data (bidirectional friendship)
+      const { data, error } = await supabase
+        .from('friends')
+        .select(`
+          *,
+          user_profiles(
+            user_id,
+            display_name,
+            avatar_url
+          )
+        `)
+        .eq('user_id', userId)
 
       if (error) throw error
 
-      return data?.map(relation => ({
-        ...relation,
-        user: relation.users
+      return data?.map(friend => ({
+        ...friend,
+        user: friend.user_profiles
       })) || []
     } catch (error) {
-      console.error('Error fetching user relationships:', error)
+      console.error('Error fetching user friends:', error)
       return []
     }
   },
@@ -517,8 +527,8 @@ export const communityService = {
         .from('social_posts')
         .select(`
           *,
-          users!social_posts_user_id_fkey(
-            id,
+          user_profiles(
+            user_id,
             display_name,
             avatar_url
           )
@@ -538,7 +548,7 @@ export const communityService = {
 
       return data?.map(post => ({
         ...post,
-        user: post.users
+        user: post.user_profiles
       })) || []
     } catch (error) {
       console.error('Error searching posts:', error)

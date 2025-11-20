@@ -12,6 +12,7 @@ export interface AIGeneratedMission {
   description: string;
   specificTasks: string[];
   personalizedTips: string[];
+  resources?: { title: string; url: string; type: 'video' | 'article' | 'tutorial' }[];
   isRecurring: boolean;
 }
 
@@ -477,6 +478,10 @@ RESPONSE FORMAT (JSON):
   "description": "Brief mission overview (max 100 chars)", 
   "specificTasks": ["Task 1", "Task 2", "Task 3"],
   "personalizedTips": ["Tip 1", "Tip 2"],
+  "resources": [
+    {"title": "Resource name", "url": "https://example.com", "type": "video|article|tutorial"},
+    {"title": "Another resource", "url": "https://example.com", "type": "video|article|tutorial"}
+  ],
   "isRecurring": true/false
 }
 
@@ -488,6 +493,14 @@ MISSION GUIDELINES:
 - Vary mission types to prevent boredom
 - Consider time constraints (30-240 minutes)
 - Make it engaging and motivating
+- Include 1-3 helpful resources with REAL, WORKING URLs
+- For videos: Use actual YouTube searches, format: https://www.youtube.com/results?search_query=TOPIC
+- For articles: Use Wikipedia, MDN, or official documentation with real URLs
+- For tutorials: Use freeCodeCamp, W3Schools, or official guides with real URLs
+- Example resources:
+  * Video: {"title": "JavaScript Tutorial", "url": "https://www.youtube.com/results?search_query=javascript+tutorial", "type": "video"}
+  * Article: {"title": "JavaScript Guide", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide", "type": "article"}
+  * Tutorial: {"title": "Learn JavaScript", "url": "https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures/", "type": "tutorial"}
 
 DIFFICULTY LEVELS:
 - Easy (Level 1-2): Basic practice, fundamentals
@@ -495,7 +508,7 @@ DIFFICULTY LEVELS:
 - Hard (Level 6-9): Advanced techniques, teaching others
 - Expert (Level 10+): Innovation, mastery, mentoring
 
-Always respond with valid JSON only.
+Always respond with valid JSON only. ENSURE ALL URLs ARE REAL AND ACCESSIBLE.
 `.trim();
 }
 
@@ -605,11 +618,35 @@ function parseAIResponse(response: string): AIGeneratedMission | null {
       throw new Error('Invalid response format');
     }
     
+    // Process resources and add fallbacks if needed
+    let resources = parsed.resources || [];
+    if (resources.length === 0 || !resources[0]?.url || resources[0].url.includes('example.com')) {
+      // AI didn't provide real resources, add generic search links
+      const skillName = parsed.title.split(' ')[0]; // Get first word as skill
+      resources = [
+        {
+          title: `Search YouTube for ${skillName} tutorials`,
+          url: `https://www.youtube.com/results?search_query=${encodeURIComponent(skillName + ' tutorial')}`,
+          type: 'video'
+        },
+        {
+          title: `${skillName} documentation and guides`,
+          url: `https://www.google.com/search?q=${encodeURIComponent(skillName + ' documentation')}`,
+          type: 'article'
+        }
+      ];
+    }
+    
     return {
       title: parsed.title.slice(0, 50), // Ensure title length limit
       description: parsed.description.slice(0, 100), // Ensure description length limit
       specificTasks: parsed.specificTasks.slice(0, 3), // Max 3 tasks
       personalizedTips: parsed.personalizedTips ? parsed.personalizedTips.slice(0, 2) : [],
+      resources: resources.slice(0, 3).map((r: any) => ({
+        title: r.title || 'Resource',
+        url: r.url || '',
+        type: ['video', 'article', 'tutorial'].includes(r.type) ? r.type : 'article'
+      })),
       isRecurring: Boolean(parsed.isRecurring)
     };
     

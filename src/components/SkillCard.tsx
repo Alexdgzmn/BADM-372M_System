@@ -1,14 +1,15 @@
 import React from 'react';
 import { Skill } from '../types';
-import { Trophy, Target, Zap, Loader2 } from 'lucide-react';
+import { Trophy, Target, Zap, Loader2, Trash2 } from 'lucide-react';
 
 interface SkillCardProps {
   skill: Skill;
   onGenerateMission: (skillId: string) => void;
+  onDeleteSkill: (skillId: string) => void;
   isGenerating?: boolean;
 }
 
-export const SkillCard: React.FC<SkillCardProps> = ({ skill, onGenerateMission, isGenerating = false }) => {
+export const SkillCard: React.FC<SkillCardProps> = ({ skill, onGenerateMission, onDeleteSkill, isGenerating = false }) => {
   const progressPercentage = ((skill.totalExperience - (skill.level - 1) ** 2 * 100) / skill.experienceToNext) * 100;
   const clampedProgress = Math.min(100, Math.max(5, progressPercentage));
 
@@ -22,9 +23,18 @@ export const SkillCard: React.FC<SkillCardProps> = ({ skill, onGenerateMission, 
           />
           <h3 className="text-lg font-semibold text-primary">{skill.name}</h3>
         </div>
-        <div className="flex items-center gap-1 bg-primary/20 px-3 py-1 rounded-full">
-          <Trophy className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium text-primary">Level {skill.level}</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 bg-primary/20 px-3 py-1 rounded-full">
+            <Trophy className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium text-primary">Level {skill.level}</span>
+          </div>
+          <button
+            onClick={() => onDeleteSkill(skill.id)}
+            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors duration-200"
+            title="Delete skill"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
 

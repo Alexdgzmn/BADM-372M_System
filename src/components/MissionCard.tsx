@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Mission, Skill } from '../types';
-import { Clock, Award, RefreshCw, CheckCircle2, AlertTriangle, Sparkles, Lightbulb } from 'lucide-react';
+import { Clock, Award, RefreshCw, CheckCircle2, AlertTriangle, Sparkles, Lightbulb, ExternalLink, Youtube, FileText, BookOpen } from 'lucide-react';
 
 interface MissionCardProps {
   mission: Mission;
@@ -112,6 +112,33 @@ export const MissionCard: React.FC<MissionCardProps> = ({ mission, skill, onComp
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+              
+              {mission.resources && mission.resources.length > 0 && (
+                <div className="bg-blue-50 rounded-lg p-3">
+                  <h4 className="text-xs font-medium text-primary mb-2 flex items-center gap-1">
+                    <BookOpen className="w-3 h-3" />
+                    Helpful Resources:
+                  </h4>
+                  <div className="space-y-2">
+                    {mission.resources.map((resource, index) => {
+                      const Icon = resource.type === 'video' ? Youtube : resource.type === 'tutorial' ? BookOpen : FileText;
+                      return (
+                        <a
+                          key={index}
+                          href={resource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-xs text-blue-600 hover:text-blue-800 hover:underline group"
+                        >
+                          <Icon className="w-3 h-3 flex-shrink-0" />
+                          <span className="flex-1">{resource.title}</span>
+                          <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </a>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>

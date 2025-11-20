@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Trophy, Heart, MessageCircle, Share2, Flag, ChevronDown, MoreVertical } from 'lucide-react';
+import { Users, Trophy, Heart, MessageCircle, Share2, Flag, ChevronDown, MoreVertical, Plus, X, Image as ImageIcon } from 'lucide-react';
 
 interface User {
   id: string;
@@ -41,6 +41,7 @@ interface CommunityBoardProps {
   onAddComment: (postId: string, content: string) => void;
   onReportPost: (postId: string) => void;
   onSharePost: (postId: string) => void;
+  onCreatePost: (post: { type: Post['type']; content: string; tags: string[]; image?: string }) => void;
 }
 
 export const CommunityBoard: React.FC<CommunityBoardProps> = ({
@@ -50,11 +51,19 @@ export const CommunityBoard: React.FC<CommunityBoardProps> = ({
   onLikeComment,
   onAddComment,
   onReportPost,
-  onSharePost
+  onSharePost,
+  onCreatePost
 }) => {
   const [filter, setFilter] = useState<'all' | 'progress' | 'achievements' | 'tips' | 'challenges'>('all');
   const [newComment, setNewComment] = useState<{ [postId: string]: string }>({});
   const [showComments, setShowComments] = useState<{ [postId: string]: boolean }>({});
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
+  const [newPost, setNewPost] = useState({
+    type: 'progress' as Post['type'],
+    content: '',
+    tags: '',
+    image: ''
+  });
 
   const filteredPosts = posts.filter(post => {
     if (filter === 'all') return true;
@@ -115,13 +124,178 @@ export const CommunityBoard: React.FC<CommunityBoardProps> = ({
     });
   };
 
+  const handleCreatePost = () => {
+    if (!newPost.content.trim()) {
+      alert('Please write something before posting');
+      return;
+    }
+
+    const tags = newPost.tags
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0);
+
+    onCreatePost({
+      type: newPost.type,
+      content: newPost.content.trim(),
+      tags,
+      image: newPost.image || undefined
+    });
+
+    // Reset form
+    setNewPost({
+      type: 'progress',
+      content: '',
+      tags: '',
+      image: ''
+    });
+    setIsCreatePostOpen(false);
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white mb-2">Community</h1>
-        <p className="text-white/70">Share your journey and support others</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Community</h1>
+          <p className="text-white/70">Share your journey and support others</p>
+        </div>
+        <button
+          onClick={() => setIsCreatePostOpen(true)}
+          className="flex items-center gap-2 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 hover:scale-105"
+        >
+          <Plus className="w-5 h-5" />
+          Create Post
+        </button>
       </div>
+
+      {/* Create Post Modal */}
+      {isCreatePostOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-primary">Create a Post</h2>
+              <button
+                onClick={() => setIsCreatePostOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              {/* Post Type Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-primary mb-2">
+                  Post Type
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { value: 'progress', label: '📈 Progress', color: 'blue' },
+                    { value: 'achievement', label: '🏆 Achievement', color: 'green' },
+                    { value: 'struggle', label: '💪 Struggle', color: 'orange' },
+                    { value: 'tip', label: '💡 Tip', color: 'purple' },
+                    { value: 'challenge_update', label: '🎯 Challenge', color: 'pink' },
+                  ].map((type) => (
+                    <button
+                      key={type.value}
+                      onClick={() => setNewPost({ ...newPost, type: type.value as Post['type'] })}
+                      className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                        newPost.type === type.value
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      {type.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Post Content */}
+              <div>
+                <label className="block text-sm font-semibold text-primary mb-2">
+                  What's on your mind?
+                </label>
+                <textarea
+                  value={newPost.content}
+                  onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
+                  placeholder="Share your journey, ask for advice, or celebrate a win..."
+                  rows={6}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {newPost.content.length} characters
+                </p>
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-sm font-semibold text-primary mb-2">
+                  Tags (optional)
+                </label>
+                <input
+                  type="text"
+                  value={newPost.tags}
+                  onChange={(e) => setNewPost({ ...newPost, tags: e.target.value })}
+                  placeholder="coding, fitness, music (comma-separated)"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+
+              {/* Image URL (optional) */}
+              <div>
+                <label className="block text-sm font-semibold text-primary mb-2">
+                  Image URL (optional)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newPost.image}
+                    onChange={(e) => setNewPost({ ...newPost, image: e.target.value })}
+                    placeholder="https://example.com/image.jpg"
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                  <button className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <ImageIcon className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+                {newPost.image && (
+                  <div className="mt-2 rounded-lg overflow-hidden border border-gray-200">
+                    <img
+                      src={newPost.image}
+                      alt="Preview"
+                      className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = '/api/placeholder/400/300';
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+              <button
+                onClick={() => setIsCreatePostOpen(false)}
+                className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreatePost}
+                disabled={!newPost.content.trim()}
+                className="px-6 py-2.5 bg-primary text-white rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Post to Community
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex gap-2 mb-6 overflow-x-auto">

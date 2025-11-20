@@ -25,6 +25,7 @@ export interface Mission {
   // AI-generated content
   specificTasks?: string[];
   personalizedTips?: string[];
+  resources?: { title: string; url: string; type: 'video' | 'article' | 'tutorial' }[];
   isAIGenerated?: boolean;
 }
 
@@ -34,6 +35,46 @@ export interface UserProgress {
   missionsCompleted: number;
   currentStreak: number;
   longestStreak: number;
+  skillLevelUpContributions?: { [skillId: string]: number }; // Track XP contribution per skill
+}
+
+export interface UserProfile {
+  displayName: string;
+  nickname: string;
+  avatar?: string;
+}
+
+export interface Friend {
+  id: string;
+  userId: string;
+  displayName: string;
+  nickname: string;
+  avatar?: string;
+  level: number;
+  currentStreak: number;
+  status: 'online' | 'offline';
+}
+
+export interface FriendRequest {
+  id: string;
+  fromUserId: string;
+  fromUserName: string;
+  fromUserNickname: string;
+  fromUserAvatar?: string;
+  fromUserLevel: number;
+  toUserId: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  createdAt: Date;
+}
+
+export interface UserSearchResult {
+  userId: string;
+  displayName: string;
+  nickname: string;
+  avatar?: string;
+  level: number;
+  isFriend: boolean;
+  hasPendingRequest: boolean;
 }
 
 // Social Feature Types

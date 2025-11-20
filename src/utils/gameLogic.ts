@@ -54,6 +54,7 @@ export const generateMissionForSkill = async (
         createdAt: new Date(),
         specificTasks: aiMission.specificTasks,
         personalizedTips: aiMission.personalizedTips,
+        resources: aiMission.resources,
         isAIGenerated: true
       };
     } else {
