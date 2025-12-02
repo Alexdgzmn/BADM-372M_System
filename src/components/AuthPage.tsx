@@ -31,9 +31,11 @@ export const AuthPage: React.FC = () => {
           <div className="space-y-8">
             <div className="text-center lg:text-left">
               <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
-                <div className="bg-secondary/20 border border-secondary/30 p-3 rounded-xl">
-                  <Gamepad2 className="w-8 h-8 text-secondary" />
-                </div>
+                <img 
+                  src="/logo.png" 
+                  alt="The System Logo" 
+                  className="w-12 h-12 object-cover rounded-xl"
+                />
                 <h1 className="text-4xl font-bold text-white font-headline">
                   THE SYSTEM
                 </h1>

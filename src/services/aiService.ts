@@ -493,14 +493,22 @@ MISSION GUIDELINES:
 - Vary mission types to prevent boredom
 - Consider time constraints (30-240 minutes)
 - Make it engaging and motivating
-- Include 1-3 helpful resources with REAL, WORKING URLs
-- For videos: Use actual YouTube searches, format: https://www.youtube.com/results?search_query=TOPIC
-- For articles: Use Wikipedia, MDN, or official documentation with real URLs
-- For tutorials: Use freeCodeCamp, W3Schools, or official guides with real URLs
-- Example resources:
+- Include 1-3 helpful resources with REAL, WORKING URLs ONLY
+
+CRITICAL - RESOURCE URL RULES:
+- For videos: ALWAYS use YouTube SEARCH format: https://www.youtube.com/results?search_query=YOUR_TOPIC
+- NEVER use specific YouTube video URLs (youtube.com/watch?v=...)
+- For articles: Use MDN (developer.mozilla.org), official docs, or Wikipedia
+- For tutorials: Use W3Schools, FreeCodeCamp, or official learning sites
+- ALL URLs must be to real, accessible websites that exist
+- Example GOOD resources:
   * Video: {"title": "JavaScript Tutorial", "url": "https://www.youtube.com/results?search_query=javascript+tutorial", "type": "video"}
   * Article: {"title": "JavaScript Guide", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide", "type": "article"}
-  * Tutorial: {"title": "Learn JavaScript", "url": "https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures/", "type": "tutorial"}
+  * Tutorial: {"title": "Learn JavaScript", "url": "https://www.w3schools.com/js/", "type": "tutorial"}
+- Example BAD resources (DO NOT USE):
+  * {"url": "https://www.youtube.com/watch?v=abc123"} ❌ Specific video doesn't exist
+  * {"url": "https://example.com"} ❌ Fake domain
+  * {"url": "https://tutorial.com/learn"} ❌ Non-existent site
 
 DIFFICULTY LEVELS:
 - Easy (Level 1-2): Basic practice, fundamentals
@@ -621,19 +629,30 @@ function parseAIResponse(response: string): AIGeneratedMission | null {
     // Process resources and ensure they have real, working URLs
     let resources = parsed.resources || [];
     
+    // List of known reliable domains
+    const reliableDomains = [
+      'youtube.com', 'youtu.be',
+      'developer.mozilla.org', 'docs.python.org',
+      'w3schools.com', 'freecodecamp.org',
+      'react.dev', 'nodejs.org',
+      'wikipedia.org', 'google.com'
+    ];
+    
     // Validate and fix resource URLs
     resources = resources.map((r: any) => {
       let url = r.url || '';
+      const searchTerm = (r.title || parsed.title.split(' ')[0]).toLowerCase();
       
-      // If URL is fake or empty, generate a real one based on the resource title and type
-      if (!url || url.includes('example.com') || !url.startsWith('http')) {
-        const searchTerm = (r.title || parsed.title.split(' ')[0]).toLowerCase();
-        
+      // Check if URL is invalid or not from a reliable domain
+      const isValidUrl = url.startsWith('http') && reliableDomains.some(domain => url.includes(domain));
+      
+      if (!isValidUrl || url.includes('example.com')) {
+        // Generate a guaranteed working URL based on type
         if (r.type === 'video') {
           // Always use YouTube search - guaranteed to work
           url = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`;
         } else if (r.type === 'tutorial') {
-          // Use FreeCodeCamp or W3Schools - both always accessible
+          // Use W3Schools or reliable tutorial sites
           if (searchTerm.includes('javascript') || searchTerm.includes('js')) {
             url = 'https://www.w3schools.com/js/';
           } else if (searchTerm.includes('python')) {
@@ -662,7 +681,7 @@ function parseAIResponse(response: string): AIGeneratedMission | null {
           } else if (searchTerm.includes('react')) {
             url = 'https://react.dev/';
           } else {
-            // Generic search on Google
+            // Generic Google search as last resort
             url = `https://www.google.com/search?q=${encodeURIComponent(searchTerm)}`;
           }
         }
