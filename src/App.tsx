@@ -705,11 +705,11 @@ function AppContent() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="bg-secondary p-3 rounded-xl shadow-lg">
+              <div className="flex items-center justify-center">
                 <img 
                   src="/logo.png" 
                   alt="The System Logo" 
-                  className="w-8 h-8 object-contain"
+                  className="w-16 h-16 object-cover rounded-xl"
                 />
               </div>
               <h1 className="text-4xl font-bold font-headline text-white">

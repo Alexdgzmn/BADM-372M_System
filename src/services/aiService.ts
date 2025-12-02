@@ -618,21 +618,76 @@ function parseAIResponse(response: string): AIGeneratedMission | null {
       throw new Error('Invalid response format');
     }
     
-    // Process resources and add fallbacks if needed
+    // Process resources and ensure they have real, working URLs
     let resources = parsed.resources || [];
-    if (resources.length === 0 || !resources[0]?.url || resources[0].url.includes('example.com')) {
-      // AI didn't provide real resources, add generic search links
-      const skillName = parsed.title.split(' ')[0]; // Get first word as skill
+    
+    // Validate and fix resource URLs
+    resources = resources.map((r: any) => {
+      let url = r.url || '';
+      
+      // If URL is fake or empty, generate a real one based on the resource title and type
+      if (!url || url.includes('example.com') || !url.startsWith('http')) {
+        const searchTerm = (r.title || parsed.title.split(' ')[0]).toLowerCase();
+        
+        if (r.type === 'video') {
+          // Always use YouTube search - guaranteed to work
+          url = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`;
+        } else if (r.type === 'tutorial') {
+          // Use FreeCodeCamp or W3Schools - both always accessible
+          if (searchTerm.includes('javascript') || searchTerm.includes('js')) {
+            url = 'https://www.w3schools.com/js/';
+          } else if (searchTerm.includes('python')) {
+            url = 'https://www.w3schools.com/python/';
+          } else if (searchTerm.includes('html')) {
+            url = 'https://www.w3schools.com/html/';
+          } else if (searchTerm.includes('css')) {
+            url = 'https://www.w3schools.com/css/';
+          } else if (searchTerm.includes('sql')) {
+            url = 'https://www.w3schools.com/sql/';
+          } else if (searchTerm.includes('react')) {
+            url = 'https://react.dev/learn';
+          } else {
+            url = 'https://www.w3schools.com/';
+          }
+        } else {
+          // article type - use reliable documentation sites
+          if (searchTerm.includes('javascript') || searchTerm.includes('js')) {
+            url = 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide';
+          } else if (searchTerm.includes('python')) {
+            url = 'https://docs.python.org/3/tutorial/';
+          } else if (searchTerm.includes('html')) {
+            url = 'https://developer.mozilla.org/en-US/docs/Web/HTML';
+          } else if (searchTerm.includes('css')) {
+            url = 'https://developer.mozilla.org/en-US/docs/Web/CSS';
+          } else if (searchTerm.includes('react')) {
+            url = 'https://react.dev/';
+          } else {
+            // Generic search on Google
+            url = `https://www.google.com/search?q=${encodeURIComponent(searchTerm)}`;
+          }
+        }
+      }
+      
+      return {
+        title: r.title || 'Resource',
+        url: url,
+        type: ['video', 'article', 'tutorial'].includes(r.type) ? r.type : 'article'
+      };
+    });
+    
+    // If still no resources, add skill-appropriate defaults
+    if (resources.length === 0) {
+      const skillName = parsed.title.split(' ')[0].toLowerCase();
       resources = [
         {
-          title: `Search YouTube for ${skillName} tutorials`,
+          title: `${skillName} tutorials`,
           url: `https://www.youtube.com/results?search_query=${encodeURIComponent(skillName + ' tutorial')}`,
           type: 'video'
         },
         {
-          title: `${skillName} documentation and guides`,
-          url: `https://www.google.com/search?q=${encodeURIComponent(skillName + ' documentation')}`,
-          type: 'article'
+          title: `Learn ${skillName}`,
+          url: 'https://www.w3schools.com/',
+          type: 'tutorial'
         }
       ];
     }
