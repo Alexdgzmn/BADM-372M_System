@@ -590,26 +590,7 @@ function AppContent() {
     }
   ]);
 
-  const [mockActivities] = useState<SocialActivity[]>([
-    {
-      id: '1',
-      type: 'friend_achievement',
-      userId: 'user2',
-      user: { id: 'user2', name: 'Sarah', avatar: getAvatarUrl() },
-      message: 'completed the JavaScript Fundamentals challenge!',
-      timestamp: new Date(Date.now() - 30 * 60 * 1000),
-      isRead: false
-    },
-    {
-      id: '2',
-      type: 'challenge_join',
-      userId: 'user3',
-      user: { id: 'user3', name: 'Maya', avatar: getAvatarUrl() },
-      message: 'joined the 7-Day Design Sprint challenge',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      isRead: false
-    }
-  ]);
+  const [mockActivities] = useState<SocialActivity[]>([]);
 
   // Mock leaderboard users - computed based on current user data
   const mockLeaderboardUsers: LeaderboardUser[] = [
