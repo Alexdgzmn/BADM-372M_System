@@ -171,7 +171,7 @@ export const communityService = {
             user: {
               id: commentUserProfile?.user_id || comment.user_id,
               display_name: commentUserProfile?.display_name || 'Unknown User',
-              avatar_url: commentUserProfile?.getAvatarUrl(avatar_url),
+              avatar_url: getAvatarUrl(commentUserProfile?.avatar_url),
               level: 1
             },
             is_liked: commentLiked
@@ -184,7 +184,7 @@ export const communityService = {
           user: {
             id: postUserProfile?.user_id || post.user_id,
             display_name: postUserProfile?.display_name || 'Unknown User',
-            avatar_url: postUserProfile?.getAvatarUrl(avatar_url),
+            avatar_url: getAvatarUrl(postUserProfile?.avatar_url),
             level: 1,
             skill: ''
           },
