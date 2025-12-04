@@ -45,6 +45,7 @@ function AppContent() {
     longestStreak: 0,
     skillLevelUpContributions: {},
   });
+  const [lastStreakDate, setLastStreakDate] = useLocalStorage<string | null>('system-last-streak-date', null);
   const [userProfile, setUserProfile] = useLocalStorage<UserProfile>('system-profile', {
     displayName: '',
     nickname: '',
@@ -398,7 +399,7 @@ function AppContent() {
     }
   };
 
-  const completeMission = (missionId: string) => {
+  const completeMission = async (missionId: string) => {
     const mission = missions.find(m => m.id === missionId);
     if (!mission || mission.isCompleted) return;
 
@@ -440,7 +441,7 @@ function AppContent() {
       })
     );
 
-    // Update user progress
+    // Update user progress in state and database
     setUserProgress(prev => {
       // Award XP to total level if skill leveled up (50 XP per skill level)
       const totalLevelXP = skillLeveledUp ? 50 : 0;
@@ -454,15 +455,57 @@ function AppContent() {
         [mission.skillId]: (contributions[mission.skillId] || 0) + totalLevelXP
       };
 
-      return {
+      // Update streak: only increment once per day
+      const today = new Date().toDateString();
+      const lastDate = lastStreakDate;
+      let newStreak = prev.currentStreak;
+      
+      // Check if this is the first mission completed today
+      if (lastDate !== today) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toDateString();
+        
+        // If last streak was yesterday, increment. Otherwise reset to 1
+        if (lastDate === yesterdayStr) {
+          newStreak = prev.currentStreak + 1;
+        } else if (lastDate === null || lastDate === today) {
+          // First mission ever or already counted today, keep current streak
+          newStreak = prev.currentStreak || 1;
+        } else {
+          // Streak broken, restart at 1
+          newStreak = 1;
+        }
+        
+        // Update the last streak date
+        setLastStreakDate(today);
+      }
+
+      const newProgress = {
         ...prev,
         totalExperience: newTotalXP,
         totalLevel: newTotalLevel,
         missionsCompleted: prev.missionsCompleted + 1,
-        currentStreak: prev.currentStreak + 1,
-        longestStreak: Math.max(prev.longestStreak, prev.currentStreak + 1),
+        currentStreak: newStreak,
+        longestStreak: Math.max(prev.longestStreak, newStreak),
         skillLevelUpContributions: updatedContributions,
       };
+
+      // Save to database if user is logged in
+      if (user?.id) {
+        import('./services/userService').then(({ userService }) => {
+          userService.updateUserProgress(user.id, {
+            total_level: newTotalLevel,
+            total_experience: newTotalXP,
+            missions_completed: prev.missionsCompleted + 1,
+            current_streak: newStreak,
+            longest_streak: Math.max(prev.longestStreak, newStreak),
+            last_activity_date: new Date().toISOString().split('T')[0]
+          });
+        });
+      }
+
+      return newProgress;
     });
   };
 
@@ -705,11 +748,11 @@ function AppContent() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center">
+              <div className="bg-secondary p-3 rounded-xl shadow-lg">
                 <img 
                   src="/logo.png" 
                   alt="The System Logo" 
-                  className="w-16 h-16 object-cover rounded-xl"
+                  className="w-8 h-8 object-contain"
                 />
               </div>
               <h1 className="text-4xl font-bold font-headline text-white">
@@ -848,24 +891,11 @@ function AppContent() {
         )}
 
         {activeTab === 'challenges' && (
-          <div className="relative">
-            {/* Work in Progress Overlay */}
-            <div className="absolute inset-0 bg-primary/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
-              <div className="bg-secondary/95 p-8 rounded-xl shadow-2xl max-w-md text-center">
-                <div className="text-6xl mb-4">🚧</div>
-                <h3 className="text-2xl font-bold text-primary mb-2">Work in Progress</h3>
-                <p className="text-primary/70">This feature is currently under development. Check back soon!</p>
-              </div>
-            </div>
-            {/* Original Component (hidden but functional) */}
-            <div className="opacity-20 pointer-events-none">
-              <ChallengesHub
-                challenges={mockChallenges}
-                onJoinChallenge={handleJoinChallenge}
-                onCreateChallenge={() => setIsCreateChallengeModalOpen(true)}
-              />
-            </div>
-          </div>
+          <ChallengesHub
+            challenges={mockChallenges}
+            onJoinChallenge={handleJoinChallenge}
+            onCreateChallenge={() => setIsCreateChallengeModalOpen(true)}
+          />
         )}
 
         {activeTab === 'community' && (
