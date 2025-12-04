@@ -20,16 +20,21 @@ ON friends FOR SELECT
 USING (auth.uid() = user_id);
 
 -- Users can create friendships (used by acceptFriendRequest)
--- Allow creating both directions of friendship when accepting a request
+-- Allow creating friendships when accepting a request (both directions)
 CREATE POLICY "Users can create friendships"
 ON friends FOR INSERT
 WITH CHECK (
   auth.uid() = user_id OR 
-  EXISTS (
-    SELECT 1 FROM friend_requests 
-    WHERE friend_requests.receiver_id = auth.uid() 
-    AND friend_requests.sender_id = friends.friend_user_id
-    AND friend_requests.status = 'pending'
+  (
+    auth.uid() = friend_user_id AND
+    EXISTS (
+      SELECT 1 FROM friend_requests 
+      WHERE (
+        (friend_requests.sender_id = user_id AND friend_requests.receiver_id = auth.uid()) OR
+        (friend_requests.receiver_id = user_id AND friend_requests.sender_id = auth.uid())
+      )
+      AND friend_requests.status = 'pending'
+    )
   )
 );
 
