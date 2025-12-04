@@ -187,7 +187,7 @@ function AppContent() {
             user: {
               id: post.user.id,
               name: post.user.display_name || 'Unknown User',
-              avatar: post.user.getAvatarUrl(avatar_url),
+              avatar: getAvatarUrl(post.user.avatar_url),
               level: post.user.level || 1,
               skill: post.user.skill || ''
             },
@@ -204,7 +204,7 @@ function AppContent() {
                 user: {
                   id: comment.user.id,
                   name: comment.user.display_name || 'Unknown User',
-                  avatar: comment.user.getAvatarUrl(avatar_url),
+                  avatar: getAvatarUrl(comment.user.avatar_url),
                   level: comment.user.level || 1
                 },
                 content: comment.content,
@@ -471,7 +471,7 @@ function AppContent() {
           return {
             id: profile.user_id,
             name: profile.display_name || 'Unknown User',
-            avatar: profile.getAvatarUrl(avatar_url),
+            avatar: getAvatarUrl(profile.avatar_url),
             level: progress.total_level || 1,
             xp: progress.total_experience || 0,
             weeklyXP: 0,
@@ -510,7 +510,7 @@ function AppContent() {
         user: {
           id: post.user.id,
           name: post.user.display_name,
-          avatar: post.user.getAvatarUrl(avatar_url),
+          avatar: getAvatarUrl(post.user.avatar_url),
           level: post.user.level || 1,
           skill: post.user.skill
         },
@@ -525,7 +525,7 @@ function AppContent() {
           user: {
             id: comment.user.id,
             name: comment.user.display_name,
-            avatar: comment.user.getAvatarUrl(avatar_url),
+            avatar: getAvatarUrl(comment.user.avatar_url),
             level: comment.user.level || 1
           },
           content: comment.content,
