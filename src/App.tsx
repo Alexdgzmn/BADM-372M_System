@@ -643,22 +643,7 @@ function AppContent() {
     totalRankImprovement: 3
   };
 
-  const mockQuickChallenges: QuickChallenge[] = [
-    {
-      id: 'q1',
-      title: 'Weekend Code Challenge',
-      participants: 23,
-      timeLeft: '2 days',
-      difficulty: 'medium'
-    },
-    {
-      id: 'q2',
-      title: 'Daily Meditation',
-      participants: 156,
-      timeLeft: '12 hours',
-      difficulty: 'easy'
-    }
-  ];
+  const mockQuickChallenges: QuickChallenge[] = [];
 
   // Navigation tabs
   const tabs = [
