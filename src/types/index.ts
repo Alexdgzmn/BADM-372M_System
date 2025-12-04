@@ -48,11 +48,11 @@ export interface Friend {
   id: string;
   userId: string;
   displayName: string;
-  nickname: string;
+  nickname?: string;
   avatar?: string;
   level: number;
   currentStreak: number;
-  status: 'online' | 'offline';
+  status: 'online' | 'offline' | 'away';
 }
 
 export interface FriendRequest {
@@ -65,6 +65,12 @@ export interface FriendRequest {
   toUserId: string;
   status: 'pending' | 'accepted' | 'rejected';
   createdAt: Date;
+  // Legacy fields for compatibility with database service
+  senderId?: string;
+  senderDisplayName?: string;
+  senderNickname?: string;
+  senderAvatar?: string;
+  receiverId?: string;
 }
 
 export interface UserSearchResult {

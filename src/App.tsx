@@ -7,6 +7,7 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { supabase } from './lib/database';
 import { getAvatarUrl } from './utils/avatarUtils';
+import * as friendsService from './services/friendsService';
 import { 
   generateMissionForSkill, 
   calculateLevelFromExperience, 
@@ -59,10 +60,11 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'challenges' | 'community' | 'leaderboards' | 'profile'>('dashboard');
   const [isCreateChallengeModalOpen, setIsCreateChallengeModalOpen] = useState(false);
   const [isFriendsModalOpen, setIsFriendsModalOpen] = useState(false);
-  
+
   // Friends system state
-  const [friends, setFriends] = useLocalStorage<Friend[]>('system-friends', []);
-  const [friendRequests, setFriendRequests] = useLocalStorage<FriendRequest[]>('system-friend-requests', []);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+  const [loadingFriends, setLoadingFriends] = useState(false);
   const [allUsers] = useLocalStorage<UserProfile[]>('system-all-users', []); // Mock user database
   
   // Real data from Supabase
@@ -297,6 +299,67 @@ function AppContent() {
     };
     
     fetchChallenges();
+  }, [user?.id]);
+
+  // Load friends data from database
+  const loadFriendsData = async () => {
+    if (!user?.id) return;
+    
+    setLoadingFriends(true);
+    try {
+      const [friendsData, requestsData] = await Promise.all([
+        friendsService.getFriends(user.id),
+        friendsService.getFriendRequests(user.id)
+      ]);
+
+      // Convert friendsService data to App Friend type
+      const convertedFriends: Friend[] = friendsData.map(f => ({
+        id: f.id,
+        userId: f.userId,
+        displayName: f.displayName,
+        nickname: f.nickname,
+        avatar: f.avatar,
+        level: f.level,
+        currentStreak: f.currentStreak,
+        status: f.status
+      }));
+
+      // Convert friendsService data to App FriendRequest type
+      const convertedRequests: FriendRequest[] = requestsData.map(r => ({
+        id: r.id,
+        fromUserId: r.senderId,
+        fromUserName: r.senderDisplayName,
+        fromUserNickname: r.senderNickname || 'user',
+        fromUserAvatar: r.senderAvatar,
+        fromUserLevel: r.senderLevel,
+        toUserId: r.receiverId,
+        status: r.status,
+        createdAt: r.createdAt,
+        // Legacy fields for compatibility
+        senderId: r.senderId,
+        senderDisplayName: r.senderDisplayName,
+        senderNickname: r.senderNickname,
+        senderAvatar: r.senderAvatar,
+        receiverId: r.receiverId
+      }));
+
+      setFriends(convertedFriends);
+      setFriendRequests(convertedRequests);
+    } catch (error) {
+      console.error('Error loading friends data:', error);
+    } finally {
+      setLoadingFriends(false);
+    }
+  };
+
+  // Load friends when user logs in
+  useEffect(() => {
+    if (user?.id) {
+      loadFriendsData();
+    } else {
+      setFriends([]);
+      setFriendRequests([]);
+    }
   }, [user?.id]);
 
   // Fetch leaderboard from Supabase
@@ -1256,77 +1319,82 @@ function AppContent() {
   };
 
   // Friends system handlers
-  const handleSearchUsers = (query: string) => {
-    if (query.length < 2) return [];
+  const handleSearchUsers = async (query: string): Promise<UserSearchResult[]> => {
+    if (!user || query.length < 2) return [];
     
-    // Mock search - filter mock users by name or nickname
-    const mockUsers: UserSearchResult[] = [
-      { id: '1', userId: 'mock-user-1', displayName: 'Alex Chen', nickname: 'alexchen', avatar: null, level: 12, currentStreak: 5, isFriend: false, hasPendingRequest: false },
-      { id: '2', userId: 'mock-user-2', displayName: 'Sarah Johnson', nickname: 'sarah_j', avatar: null, level: 8, currentStreak: 3, isFriend: false, hasPendingRequest: false },
-      { id: '3', userId: 'mock-user-3', displayName: 'Mike Taylor', nickname: 'miketaylor', avatar: null, level: 15, currentStreak: 10, isFriend: false, hasPendingRequest: false },
-      { id: '4', userId: 'mock-user-4', displayName: 'Emma Davis', nickname: 'emma_d', avatar: null, level: 6, currentStreak: 2, isFriend: false, hasPendingRequest: false },
-      { id: '5', userId: 'mock-user-5', displayName: 'John Smith', nickname: 'johnsmith', avatar: null, level: 20, currentStreak: 15, isFriend: false, hasPendingRequest: false },
-    ];
-
-    const lowerQuery = query.toLowerCase();
-    return mockUsers
-      .filter(user => {
-        // Don't show users who are already friends
-        const isAlreadyFriend = friends.some(f => f.userId === user.userId);
-        // Don't show users with pending requests
-        const hasPending = friendRequests.some(r => r.senderId === user.userId && r.status === 'pending');
-        
-        const matchesSearch = user.displayName.toLowerCase().includes(lowerQuery) || 
-                            user.nickname.toLowerCase().includes(lowerQuery);
-        
-        return matchesSearch && !isAlreadyFriend;
-      })
-      .map(user => ({
-        ...user,
-        isFriend: friends.some(f => f.userId === user.userId),
-        hasPendingRequest: friendRequests.some(r => r.senderId === user.userId && r.status === 'pending')
-      }));
+    try {
+      const results = await friendsService.searchUsers(query, user.id);
+      return results;
+    } catch (error) {
+      console.error('Error searching users:', error);
+      return [];
+    }
   };
 
-  const handleSendFriendRequest = (user: UserSearchResult) => {
-    const newRequest: FriendRequest = {
-      id: `request-${Date.now()}`,
-      senderId: 'current-user', // In real app, would be current user's ID
-      senderDisplayName: userProfile.displayName || 'You',
-      senderNickname: userProfile.nickname,
-      senderAvatar: null,
-      receiverId: user.userId,
-      status: 'pending',
-      createdAt: new Date()
-    };
+  const handleSendFriendRequest = async (userId: string) => {
+    if (!user) return;
     
-    setFriendRequests([...friendRequests, newRequest]);
-    alert(`Friend request sent to ${user.displayName}!`);
+    try {
+      const result = await friendsService.sendFriendRequest(user.id, userId);
+      if (result.success) {
+        alert('Friend request sent!');
+      } else {
+        alert(result.error || 'Failed to send friend request');
+      }
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+      alert('Failed to send friend request');
+    }
   };
 
-  const handleAcceptRequest = (request: FriendRequest) => {
-    const newFriend: Friend = {
-      id: `friend-${Date.now()}`,
-      userId: request.senderId,
-      displayName: request.senderDisplayName,
-      nickname: request.senderNickname || undefined,
-      avatar: request.senderAvatar || undefined,
-      level: 10, // Mock level
-      currentStreak: 5, // Mock streak
-      status: 'online'
-    };
-
-    setFriends([...friends, newFriend]);
-    setFriendRequests(friendRequests.filter(r => r.id !== request.id));
+  const handleAcceptRequest = async (requestId: string) => {
+    if (!user) return;
+    
+    try {
+      const result = await friendsService.acceptFriendRequest(requestId, user.id);
+      if (result.success) {
+        // Refresh friends and requests
+        await loadFriendsData();
+      } else {
+        alert(result.error || 'Failed to accept friend request');
+      }
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      alert('Failed to accept friend request');
+    }
   };
 
-  const handleRejectRequest = (requestId: string) => {
-    setFriendRequests(friendRequests.filter(r => r.id !== requestId));
+  const handleRejectRequest = async (requestId: string) => {
+    if (!user) return;
+    
+    try {
+      const result = await friendsService.rejectFriendRequest(requestId, user.id);
+      if (result.success) {
+        // Refresh friend requests
+        await loadFriendsData();
+      } else {
+        alert(result.error || 'Failed to reject friend request');
+      }
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+      alert('Failed to reject friend request');
+    }
   };
 
-  const handleRemoveFriend = (friendId: string) => {
-    if (confirm('Are you sure you want to remove this friend?')) {
-      setFriends(friends.filter(f => f.id !== friendId));
+  const handleRemoveFriend = async (friendId: string) => {
+    if (!user || !confirm('Are you sure you want to remove this friend?')) return;
+    
+    try {
+      const result = await friendsService.removeFriend(user.id, friendId);
+      if (result.success) {
+        // Refresh friends list
+        await loadFriendsData();
+      } else {
+        alert(result.error || 'Failed to remove friend');
+      }
+    } catch (error) {
+      console.error('Error removing friend:', error);
+      alert('Failed to remove friend');
     }
   };
 

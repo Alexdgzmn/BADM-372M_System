@@ -7,7 +7,7 @@ interface FriendsModalProps {
   onClose: () => void;
   friends: Friend[];
   friendRequests: FriendRequest[];
-  onSearchUsers: (query: string) => UserSearchResult[];
+  onSearchUsers: (query: string) => Promise<UserSearchResult[]>;
   onSendFriendRequest: (userId: string) => void;
   onAcceptRequest: (requestId: string) => void;
   onRejectRequest: (requestId: string) => void;
@@ -28,14 +28,23 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
   const [activeTab, setActiveTab] = useState<'search' | 'requests' | 'friends'>('search');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
     if (query.trim().length >= 2) {
-      const results = onSearchUsers(query.trim());
-      setSearchResults(results);
+      setIsSearching(true);
+      try {
+        const results = await onSearchUsers(query.trim());
+        setSearchResults(results);
+      } catch (error) {
+        console.error('Error searching users:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
     } else {
       setSearchResults([]);
     }
@@ -127,7 +136,13 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                 </p>
               )}
 
-              {searchQuery.trim().length >= 2 && searchResults.length === 0 && (
+              {isSearching && (
+                <p className="text-center text-gray-500 py-8">
+                  Searching...
+                </p>
+              )}
+
+              {searchQuery.trim().length >= 2 && !isSearching && searchResults.length === 0 && (
                 <p className="text-center text-gray-500 py-8">
                   No users found matching "{searchQuery}"
                 </p>
@@ -141,8 +156,12 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                       className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-                          <Users className="w-6 h-6 text-primary" />
+                        <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center overflow-hidden">
+                          {user.avatar ? (
+                            <img src={user.avatar} alt={user.displayName} className="w-full h-full object-cover" />
+                          ) : (
+                            <Users className="w-6 h-6 text-primary" />
+                          )}
                         </div>
                         <div>
                           <p className="font-semibold text-primary">{user.displayName}</p>
@@ -179,10 +198,14 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                 <p className="text-center text-gray-500 py-8">No pending friend requests</p>
               ) : (
                 pendingRequests.map((request) => (
-                  <div
-                    key={request.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center overflow-hidden">
+                        {request.senderAvatar ? (
+                          <img src={request.senderAvatar} alt={request.fromUserName} className="w-full h-full object-cover" />
+                        ) : (
+                          <Users className="w-6 h-6 text-primary" />
+                        )}
+                      </div>
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
                         <Users className="w-6 h-6 text-primary" />
@@ -230,8 +253,12 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                   >
                     <div className="flex items-center gap-3">
                       <div className="relative">
-                        <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-                          <Users className="w-6 h-6 text-primary" />
+                        <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center overflow-hidden">
+                          {friend.avatar ? (
+                            <img src={friend.avatar} alt={friend.displayName} className="w-full h-full object-cover" />
+                          ) : (
+                            <Users className="w-6 h-6 text-primary" />
+                          )}
                         </div>
                         <div
                           className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
