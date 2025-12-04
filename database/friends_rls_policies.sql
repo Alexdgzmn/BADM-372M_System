@@ -8,6 +8,12 @@
 -- Enable RLS
 ALTER TABLE friends ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies to avoid conflicts
+DROP POLICY IF EXISTS "Users can view their own friends" ON friends;
+DROP POLICY IF EXISTS "Users can create friendships" ON friends;
+DROP POLICY IF EXISTS "Users can delete their own friendships" ON friends;
+DROP POLICY IF EXISTS "Users can update their friendships" ON friends;
+
 -- Users can view their own friendships
 CREATE POLICY "Users can view their own friends"
 ON friends FOR SELECT
@@ -34,6 +40,12 @@ USING (auth.uid() = user_id);
 
 -- Enable RLS
 ALTER TABLE friend_requests ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies to avoid conflicts
+DROP POLICY IF EXISTS "Users can view their friend requests" ON friend_requests;
+DROP POLICY IF EXISTS "Users can send friend requests" ON friend_requests;
+DROP POLICY IF EXISTS "Receivers can update friend requests" ON friend_requests;
+DROP POLICY IF EXISTS "Users can delete their sent requests" ON friend_requests;
 
 -- Users can view requests they sent or received
 CREATE POLICY "Users can view their friend requests"
