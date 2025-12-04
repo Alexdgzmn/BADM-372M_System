@@ -1,5 +1,6 @@
 // Database service functions for community features
 import { supabase } from '../lib/database'
+import { getAvatarUrl } from '../utils/avatarUtils'
 
 export interface SocialPost {
   id: string
@@ -170,7 +171,7 @@ export const communityService = {
             user: {
               id: commentUserProfile?.user_id || comment.user_id,
               display_name: commentUserProfile?.display_name || 'Unknown User',
-              avatar_url: commentUserProfile?.avatar_url || '/api/placeholder/32/32',
+              avatar_url: commentUserProfile?.getAvatarUrl(avatar_url),
               level: 1
             },
             is_liked: commentLiked
@@ -183,7 +184,7 @@ export const communityService = {
           user: {
             id: postUserProfile?.user_id || post.user_id,
             display_name: postUserProfile?.display_name || 'Unknown User',
-            avatar_url: postUserProfile?.avatar_url || '/api/placeholder/40/40',
+            avatar_url: postUserProfile?.getAvatarUrl(avatar_url),
             level: 1,
             skill: ''
           },

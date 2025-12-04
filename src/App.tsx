@@ -6,6 +6,7 @@ import { AuthPage } from './components/AuthPage';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { supabase } from './lib/database';
+import { getAvatarUrl } from './utils/avatarUtils';
 import { 
   generateMissionForSkill, 
   calculateLevelFromExperience, 
@@ -53,7 +54,7 @@ function AppContent() {
     avatar: '',
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileForm, setProfileForm] = useState({ displayName: '', nickname: '' });
+  const [profileForm, setProfileForm] = useState({ displayName: '', nickname: '', avatar: '' });
   const [isAddSkillModalOpen, setIsAddSkillModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'challenges' | 'community' | 'leaderboards' | 'profile'>('dashboard');
   const [isCreateChallengeModalOpen, setIsCreateChallengeModalOpen] = useState(false);
@@ -184,7 +185,7 @@ function AppContent() {
             user: {
               id: post.user.id,
               name: post.user.display_name || 'Unknown User',
-              avatar: post.user.avatar_url || '/api/placeholder/40/40',
+              avatar: post.user.getAvatarUrl(avatar_url),
               level: post.user.level || 1,
               skill: post.user.skill || ''
             },
@@ -201,7 +202,7 @@ function AppContent() {
                 user: {
                   id: comment.user.id,
                   name: comment.user.display_name || 'Unknown User',
-                  avatar: comment.user.avatar_url || '/api/placeholder/32/32',
+                  avatar: comment.user.getAvatarUrl(avatar_url),
                   level: comment.user.level || 1
                 },
                 content: comment.content,
@@ -259,7 +260,7 @@ function AppContent() {
             id: p.id,
             userId: p.user_id,
             name: '', // Will be populated from user_profiles
-            avatar: '/api/placeholder/32/32',
+            avatar: getAvatarUrl(),
             joinedAt: new Date(p.joined_at),
             progress: p.progress_percentage,
             tasksCompleted: p.tasks_completed,
@@ -270,7 +271,7 @@ function AppContent() {
           creator: challenge.creator ? {
             id: challenge.creator.id,
             name: challenge.creator.display_name,
-            avatar: challenge.creator.avatar_url || '/api/placeholder/32/32'
+            avatar: getAvatarUrl(challenge.creator.avatar_url)
           } : undefined,
           rules: challenge.rules || [],
           tags: challenge.tags || [],
@@ -341,7 +342,7 @@ function AppContent() {
             return {
               id: profile.user_id,
               name: profile.display_name || 'Unknown User',
-              avatar: profile.avatar_url || '/api/placeholder/48/48',
+              avatar: getAvatarUrl(profile.avatar_url),
               level: progress.total_level || 1,
               xp: progress.total_experience || 0,
               weeklyXP: 0,
@@ -407,7 +408,7 @@ function AppContent() {
           return {
             id: profile.user_id,
             name: profile.display_name || 'Unknown User',
-            avatar: profile.avatar_url || '/api/placeholder/48/48',
+            avatar: profile.getAvatarUrl(avatar_url),
             level: progress.total_level || 1,
             xp: progress.total_experience || 0,
             weeklyXP: 0,
@@ -446,7 +447,7 @@ function AppContent() {
         user: {
           id: post.user.id,
           name: post.user.display_name,
-          avatar: post.user.avatar_url || '/api/placeholder/40/40',
+          avatar: post.user.getAvatarUrl(avatar_url),
           level: post.user.level || 1,
           skill: post.user.skill
         },
@@ -461,7 +462,7 @@ function AppContent() {
           user: {
             id: comment.user.id,
             name: comment.user.display_name,
-            avatar: comment.user.avatar_url || '/api/placeholder/32/32',
+            avatar: comment.user.getAvatarUrl(avatar_url),
             level: comment.user.level || 1
           },
           content: comment.content,
@@ -493,11 +494,11 @@ function AppContent() {
       endDate: new Date('2024-01-31'),
       skills: ['JavaScript'],
       participants: [
-        { id: '1', userId: 'user1', name: 'Alex', avatar: '/api/placeholder/32/32', joinedAt: new Date(), progress: 75, tasksCompleted: 22, lastActivity: new Date(), isActive: true },
-        { id: '2', userId: 'user2', name: 'Sarah', avatar: '/api/placeholder/32/32', joinedAt: new Date(), progress: 60, tasksCompleted: 18, lastActivity: new Date(), isActive: true }
+        { id: '1', userId: 'user1', name: 'Alex', avatar: getAvatarUrl(), joinedAt: new Date(), progress: 75, tasksCompleted: 22, lastActivity: new Date(), isActive: true },
+        { id: '2', userId: 'user2', name: 'Sarah', avatar: getAvatarUrl(), joinedAt: new Date(), progress: 60, tasksCompleted: 18, lastActivity: new Date(), isActive: true }
       ],
       privacy: 'public',
-      creator: { id: 'creator1', name: 'CodeMentor', avatar: '/api/placeholder/32/32' },
+      creator: { id: 'creator1', name: 'CodeMentor', avatar: getAvatarUrl() },
       rules: ['Complete daily coding challenge', 'Share progress in community'],
       tags: ['programming', 'beginner-friendly'],
       status: 'active',
@@ -514,10 +515,10 @@ function AppContent() {
       endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       skills: ['Design', 'UI/UX'],
       participants: [
-        { id: '3', userId: 'user3', name: 'Maya', avatar: '/api/placeholder/32/32', joinedAt: new Date(), progress: 40, tasksCompleted: 3, lastActivity: new Date(), isActive: true }
+        { id: '3', userId: 'user3', name: 'Maya', avatar: getAvatarUrl(), joinedAt: new Date(), progress: 40, tasksCompleted: 3, lastActivity: new Date(), isActive: true }
       ],
       privacy: 'public',
-      creator: { id: 'creator2', name: 'DesignGuru', avatar: '/api/placeholder/32/32' },
+      creator: { id: 'creator2', name: 'DesignGuru', avatar: getAvatarUrl() },
       rules: ['Daily design exercises', 'Get feedback from peers'],
       tags: ['design', 'intensive'],
       status: 'active',
@@ -531,7 +532,7 @@ function AppContent() {
       id: '1',
       type: 'friend_achievement',
       userId: 'user2',
-      user: { id: 'user2', name: 'Sarah', avatar: '/api/placeholder/32/32' },
+      user: { id: 'user2', name: 'Sarah', avatar: getAvatarUrl() },
       message: 'completed the JavaScript Fundamentals challenge!',
       timestamp: new Date(Date.now() - 30 * 60 * 1000),
       isRead: false
@@ -540,7 +541,7 @@ function AppContent() {
       id: '2',
       type: 'challenge_join',
       userId: 'user3',
-      user: { id: 'user3', name: 'Maya', avatar: '/api/placeholder/32/32' },
+      user: { id: 'user3', name: 'Maya', avatar: getAvatarUrl() },
       message: 'joined the 7-Day Design Sprint challenge',
       timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
       isRead: false
@@ -552,7 +553,7 @@ function AppContent() {
     {
       id: 'user1',
       name: userProfile.displayName || user?.email || 'You',
-      avatar: '/api/placeholder/48/48',
+      avatar: getAvatarUrl(),
       level: userProgress.totalLevel,
       xp: userProgress.totalExperience,
       weeklyXP: 245,
@@ -566,7 +567,7 @@ function AppContent() {
     {
       id: 'user2',
       name: 'Sarah Johnson',
-      avatar: '/api/placeholder/48/48',
+      avatar: getAvatarUrl(),
       level: 8,
       xp: 3250,
       weeklyXP: 180,
@@ -579,7 +580,7 @@ function AppContent() {
     {
       id: 'user3',
       name: 'Maya Patel',
-      avatar: '/api/placeholder/48/48',
+      avatar: getAvatarUrl(),
       level: 6,
       xp: 2100,
       weeklyXP: 320,
@@ -1152,11 +1153,62 @@ function AppContent() {
     }
   };
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user?.id) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image size must be less than 2MB');
+      return;
+    }
+
+    try {
+      // Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update user profile with new avatar URL
+      const { userService } = await import('./services/userService');
+      await userService.updateUserProfile(user.id, {
+        avatar_url: publicUrl
+      });
+
+      // Update local state
+      setUserProfile(prev => ({ ...prev, avatar: publicUrl }));
+      setProfileForm(prev => ({ ...prev, avatar: publicUrl }));
+
+      alert('Profile picture updated successfully!');
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      alert('Failed to upload profile picture. Please try again.');
+    }
+  };
+
   // Profile handlers
   const handleEditProfile = () => {
     setProfileForm({
       displayName: userProfile.displayName,
-      nickname: userProfile.nickname
+      nickname: userProfile.nickname,
+      avatar: userProfile.avatar
     });
     setIsEditingProfile(true);
   };
@@ -1471,7 +1523,7 @@ function AppContent() {
             currentUser={{
               id: user?.id || '',
               name: userProfile.displayName || user?.email || 'You',
-              avatar: userProfile.avatar || '/api/placeholder/48/48',
+              avatar: getAvatarUrl(userProfile.avatar),
               level: userProgress.totalLevel,
               xp: userProgress.totalExperience,
               weeklyXP: 0,
@@ -1498,7 +1550,7 @@ function AppContent() {
             currentUser={realLeaderboard.find(u => u.isCurrentUser) || {
               id: user?.id || '',
               name: userProfile.displayName || user?.email || 'You',
-              avatar: '/api/placeholder/48/48',
+              avatar: getAvatarUrl(userProfile.avatar),
               level: userProgress.totalLevel,
               xp: userProgress.totalExperience,
               weeklyXP: 0,
@@ -1555,6 +1607,36 @@ function AppContent() {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {/* Avatar Upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Profile Picture
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={getAvatarUrl(profileForm.avatar)}
+                        alt="Profile"
+                        className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+                      />
+                      <div className="flex-1">
+                        <input
+                          type="file"
+                          id="avatar-upload"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="avatar-upload"
+                          className="inline-block bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg cursor-pointer transition-colors"
+                        >
+                          Upload Photo
+                        </label>
+                        <p className="text-xs text-gray-500 mt-2">Max 2MB. JPG, PNG, or GIF</p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Display Name <span className="text-red-500">*</span>
