@@ -66,6 +66,94 @@ function AppContent() {
   // Real posts from Supabase
   const [realPosts, setRealPosts] = useState<SocialPost[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [isLoadingUserData, setIsLoadingUserData] = useState(true);
+
+  // Load user data from database on login
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!user?.id) {
+        setIsLoadingUserData(false);
+        return;
+      }
+
+      console.log('📥 Loading user data from database...');
+      
+      try {
+        // Load user progress
+        const { userService } = await import('./services/userService');
+        const progress = await userService.getUserProgress(user.id);
+        if (progress) {
+          setUserProgress({
+            totalLevel: progress.total_level,
+            totalExperience: progress.total_experience,
+            missionsCompleted: progress.missions_completed,
+            currentStreak: progress.current_streak,
+            longestStreak: progress.longest_streak,
+            skillLevelUpContributions: {},
+          });
+          console.log('✅ User progress loaded from database');
+        }
+
+        // Load user skills
+        const { skillsService } = await import('./services/skillsService');
+        const dbSkills = await skillsService.getUserSkills(user.id);
+        if (dbSkills.length > 0) {
+          setSkills(dbSkills.map(skill => ({
+            id: skill.id,
+            name: skill.name,
+            level: skill.level,
+            experience: skill.experience,
+            totalExperience: skill.total_experience,
+            experienceToNext: skill.experience_to_next,
+            color: skill.color,
+            createdAt: new Date(skill.created_at)
+          })));
+          console.log(`✅ Loaded ${dbSkills.length} skills from database`);
+        }
+
+        // Load user profile
+        const profile = await userService.getUserProfile(user.id);
+        if (profile) {
+          setUserProfile({
+            displayName: profile.display_name || '',
+            nickname: '', // Nickname not in user_profiles table
+            avatar: profile.avatar_url || '',
+          });
+          console.log('✅ User profile loaded from database');
+        }
+
+        // Load user missions
+        const { missionsService } = await import('./services/skillsService');
+        const dbMissions = await missionsService.getUserMissions(user.id);
+        if (dbMissions.length > 0) {
+          setMissions(dbMissions.map(mission => ({
+            id: mission.id,
+            skillId: mission.skill_id,
+            title: mission.title,
+            description: mission.description,
+            experience: mission.experience,
+            isCompleted: mission.is_completed,
+            isRecurring: mission.is_recurring,
+            difficulty: mission.difficulty,
+            specificTasks: mission.specific_tasks || [],
+            learningResources: mission.learning_resources || [],
+            personalizedTips: mission.personalized_tips || [],
+            createdAt: new Date(mission.created_at),
+            completedAt: mission.completed_at ? new Date(mission.completed_at) : undefined,
+            dueDate: mission.due_date ? new Date(mission.due_date) : undefined,
+          })));
+          console.log(`✅ Loaded ${dbMissions.length} missions from database`);
+        }
+
+      } catch (error) {
+        console.error('❌ Error loading user data:', error);
+      } finally {
+        setIsLoadingUserData(false);
+      }
+    };
+
+    loadUserData();
+  }, [user?.id]);
 
   // Fetch real posts from Supabase
   useEffect(() => {
@@ -340,21 +428,51 @@ function AppContent() {
     return <AuthPage />;
   }
 
-  const addSkill = (name: string, color: string) => {
-    const newSkill: Skill = {
-      id: crypto.randomUUID(),
-      name,
-      level: 1,
-      experience: 0,
-      experienceToNext: 100,
-      totalExperience: 0,
-      color,
-      createdAt: new Date(),
-    };
-    setSkills(prev => [...prev, newSkill]);
+  const addSkill = async (name: string, color: string) => {
+    // If user is logged in, save to database first and use its ID
+    if (user?.id) {
+      const { skillsService } = await import('./services/skillsService');
+      const result = await skillsService.createSkill(user.id, {
+        name,
+        color,
+        level: 1,
+        experience: 0
+      });
+      
+      if (result.error) {
+        console.error('❌ Failed to save skill to database:', result.error);
+        return;
+      } else if (result.data) {
+        console.log('✅ Skill saved to database with ID:', result.data.id);
+        const newSkill: Skill = {
+          id: result.data.id, // Use database ID from the start
+          name,
+          level: 1,
+          experience: 0,
+          experienceToNext: 100,
+          totalExperience: 0,
+          color,
+          createdAt: new Date(result.data.created_at),
+        };
+        setSkills(prev => [...prev, newSkill]);
+      }
+    } else {
+      // Guest mode: use local UUID
+      const newSkill: Skill = {
+        id: crypto.randomUUID(),
+        name,
+        level: 1,
+        experience: 0,
+        experienceToNext: 100,
+        totalExperience: 0,
+        color,
+        createdAt: new Date(),
+      };
+      setSkills(prev => [...prev, newSkill]);
+    }
   };
 
-  const deleteSkill = (skillId: string) => {
+  const deleteSkill = async (skillId: string) => {
     const skill = skills.find(s => s.id === skillId);
     if (!skill) return;
 
@@ -385,6 +503,19 @@ function AppContent() {
         skillLevelUpContributions: newContributions,
       };
     });
+
+    // Delete from database if user is logged in
+    if (user?.id) {
+      import('./services/skillsService').then(({ skillsService }) => {
+        skillsService.deleteSkill(skillId).then(result => {
+          if (result.error) {
+            console.error('Failed to delete skill from database:', result.error);
+          } else {
+            console.log('✅ Skill deleted from database');
+          }
+        });
+      });
+    }
   };
 
   const generateMission = async (skillId: string) => {
@@ -393,6 +524,31 @@ function AppContent() {
 
     try {
       const newMission = await generateMissionForSkill(skill, userProgress, missions);
+      
+      // Save to database if user is logged in
+      if (user?.id) {
+        const { missionsService } = await import('./services/skillsService');
+        const result = await missionsService.createMission(user.id, {
+          skill_id: skillId,
+          title: newMission.title,
+          description: newMission.description,
+          experience: newMission.experience,
+          difficulty: newMission.difficulty,
+          is_ai_generated: true,
+          specific_tasks: newMission.specificTasks || [],
+          learning_resources: newMission.learningResources || [],
+          personalized_tips: newMission.personalizedTips || [],
+        });
+        
+        if (result.error) {
+          console.error('❌ Failed to save mission to database:', result.error);
+        } else if (result.data) {
+          console.log('✅ Mission saved to database with ID:', result.data.id);
+          // Use database ID
+          newMission.id = result.data.id;
+        }
+      }
+      
       setMissions(prev => [...prev, newMission]);
     } catch (error) {
       console.error('Failed to generate mission:', error);
@@ -411,6 +567,17 @@ function AppContent() {
           : m
       )
     );
+    
+    // Save mission completion to database
+    if (user?.id) {
+      const { missionsService } = await import('./services/skillsService');
+      const result = await missionsService.completeMission(missionId, user.id);
+      if (result.error) {
+        console.error('❌ Failed to mark mission as completed in database:', result.error);
+      } else {
+        console.log('✅ Mission marked as completed in database');
+      }
+    }
 
     // Track if skill leveled up
     let skillLeveledUp = false;
@@ -429,6 +596,28 @@ function AppContent() {
           const newTotalExp = skill.totalExperience + mission.experience;
           const newLevel = calculateLevelFromExperience(newTotalExp);
           const newExpToNext = calculateExperienceToNextLevel(newTotalExp);
+          
+          // Save skill experience to database
+          if (user?.id) {
+            console.log('💾 Saving skill experience to database:', {
+              skillId: skill.id,
+              experience: mission.experience,
+              newTotalExp
+            });
+            import('./services/skillsService').then(({ skillsService }) => {
+              skillsService.updateSkillExperience(skill.id, mission.experience)
+                .then(result => {
+                  if (result.error) {
+                    console.error('❌ Failed to update skill experience:', result.error);
+                  } else {
+                    console.log('✅ Skill experience updated successfully');
+                  }
+                })
+                .catch(err => {
+                  console.error('❌ Error updating skill experience:', err);
+                });
+            });
+          }
           
           return {
             ...skill,
@@ -493,6 +682,7 @@ function AppContent() {
 
       // Save to database if user is logged in
       if (user?.id) {
+        console.log('💾 Saving progress to database for user:', user.id);
         import('./services/userService').then(({ userService }) => {
           userService.updateUserProgress(user.id, {
             total_level: newTotalLevel,
@@ -501,8 +691,18 @@ function AppContent() {
             current_streak: newStreak,
             longest_streak: Math.max(prev.longestStreak, newStreak),
             last_activity_date: new Date().toISOString().split('T')[0]
+          }).then(result => {
+            if (result.error) {
+              console.error('❌ Failed to save progress to database:', result.error);
+            } else {
+              console.log('✅ Progress saved to database successfully:', result.data);
+            }
+          }).catch(err => {
+            console.error('❌ Error saving to database:', err);
           });
         });
+      } else {
+        console.log('⚠️ User not logged in, progress only saved locally');
       }
 
       return newProgress;
@@ -613,7 +813,7 @@ function AppContent() {
     setIsEditingProfile(true);
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (!profileForm.displayName.trim() || !profileForm.nickname.trim()) {
       alert('Please fill in both name and nickname');
       return;
@@ -625,12 +825,30 @@ function AppContent() {
       return;
     }
 
-    setUserProfile({
+    const newProfile = {
       ...userProfile,
       displayName: profileForm.displayName.trim(),
       nickname: profileForm.nickname.trim()
-    });
+    };
+
+    setUserProfile(newProfile);
     setIsEditingProfile(false);
+
+    // Save to database if user is logged in
+    if (user?.id) {
+      const { userService } = await import('./services/userService');
+      const result = await userService.updateUserProfile(user.id, {
+        display_name: newProfile.displayName,
+        // Note: Supabase schema doesn't have nickname in user_profiles, it's in users table
+        // You may need to update the users table instead
+      });
+      
+      if (result.error) {
+        console.error('Failed to save profile to database:', result.error);
+      } else {
+        console.log('✅ Profile saved to database');
+      }
+    }
   };
 
   const handleCancelEdit = () => {

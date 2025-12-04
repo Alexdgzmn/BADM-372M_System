@@ -190,12 +190,18 @@ export const userService = {
     }
   },
 
-  // Update user progress
+  // Update user progress (with upsert to create if doesn't exist)
   async updateUserProgress(userId: string, updates: Partial<UserProgress>) {
     try {
       const { data, error } = await supabase
         .from('user_progress')
-        .update(updates)
+        .upsert({
+          user_id: userId,
+          ...updates,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        })
         .eq('user_id', userId)
         .select()
         .single()
