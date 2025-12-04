@@ -20,9 +20,18 @@ ON friends FOR SELECT
 USING (auth.uid() = user_id);
 
 -- Users can create friendships (used by acceptFriendRequest)
+-- Allow creating both directions of friendship when accepting a request
 CREATE POLICY "Users can create friendships"
 ON friends FOR INSERT
-WITH CHECK (auth.uid() = user_id);
+WITH CHECK (
+  auth.uid() = user_id OR 
+  EXISTS (
+    SELECT 1 FROM friend_requests 
+    WHERE friend_requests.receiver_id = auth.uid() 
+    AND friend_requests.sender_id = friends.friend_user_id
+    AND friend_requests.status = 'pending'
+  )
+);
 
 -- Users can delete their own friendships
 CREATE POLICY "Users can delete their own friendships"
