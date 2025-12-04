@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
-import { Users, Trophy, Calendar } from 'lucide-react';
+import { Users, Trophy, Calendar, Trash2 } from 'lucide-react';
 import { Challenge } from '../types';
 
 interface ChallengesHubProps {
   challenges: Challenge[];
   onJoinChallenge: (challengeId: string) => void;
   onCreateChallenge: () => void;
+  onDeleteChallenge: (challengeId: string) => void;
+  currentUserId: string;
 }
 
 export const ChallengesHub: React.FC<ChallengesHubProps> = ({
   challenges,
   onJoinChallenge,
-  onCreateChallenge
+  onCreateChallenge,
+  onDeleteChallenge,
+  currentUserId
 }) => {
   const [activeTab, setActiveTab] = useState<'browse' | 'my-challenges' | 'create'>('browse');
   const [filter, setFilter] = useState<'all' | 'sprint' | 'quest' | 'team' | 'skill'>('all');
@@ -168,29 +172,46 @@ export const ChallengesHub: React.FC<ChallengesHubProps> = ({
                 </div>
 
                 {/* Creator */}
-                <div className="flex items-center gap-2 mb-4">
-                  <img
-                    src={challenge.creator.avatar}
-                    alt={challenge.creator.name}
-                    className="w-6 h-6 rounded-full"
-                  />
-                  <span className="text-sm text-gray-500">
-                    Created by {challenge.creator.name}
-                  </span>
-                </div>
+                {challenge.creator && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <img
+                      src={challenge.creator.avatar}
+                      alt={challenge.creator.name}
+                      className="w-6 h-6 rounded-full"
+                    />
+                    <span className="text-sm text-gray-500">
+                      Created by {challenge.creator.name}
+                    </span>
+                  </div>
+                )}
 
-                {/* Action Button */}
-                <button
-                  onClick={() => onJoinChallenge(challenge.id)}
-                  disabled={challenge.isJoined}
-                  className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-                    challenge.isJoined
-                      ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                      : 'bg-primary text-white hover:opacity-90'
-                  }`}
-                >
-                  {challenge.isJoined ? '✓ Joined' : 'Join Challenge'}
-                </button>
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onJoinChallenge(challenge.id)}
+                    disabled={challenge.isJoined}
+                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+                      challenge.isJoined
+                        ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                        : 'bg-primary text-white hover:opacity-90'
+                    }`}
+                  >
+                    {challenge.isJoined ? '✓ Joined' : 'Join Challenge'}
+                  </button>
+                  {challenge.creator?.id === currentUserId && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this challenge?')) {
+                          onDeleteChallenge(challenge.id);
+                        }
+                      }}
+                      className="py-3 px-4 rounded-lg font-medium transition-colors bg-red-100 text-red-700 hover:bg-red-200"
+                      title="Delete Challenge"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

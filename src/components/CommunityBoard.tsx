@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Users, Trophy, Heart, MessageCircle, Share2, Flag, ChevronDown, MoreVertical, Plus, X, Image as ImageIcon } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Users, Trophy, Heart, MessageCircle, Share2, Flag, ChevronDown, MoreVertical, Plus, X, Image as ImageIcon, Trash2 } from 'lucide-react';
 
 interface User {
   id: string;
@@ -42,6 +42,7 @@ interface CommunityBoardProps {
   onReportPost: (postId: string) => void;
   onSharePost: (postId: string) => void;
   onCreatePost: (post: { type: Post['type']; content: string; tags: string[]; image?: string }) => void;
+  onDeletePost: (postId: string) => void;
 }
 
 export const CommunityBoard: React.FC<CommunityBoardProps> = ({
@@ -52,18 +53,35 @@ export const CommunityBoard: React.FC<CommunityBoardProps> = ({
   onAddComment,
   onReportPost,
   onSharePost,
-  onCreatePost
+  onCreatePost,
+  onDeletePost
 }) => {
   const [filter, setFilter] = useState<'all' | 'progress' | 'achievements' | 'tips' | 'challenges'>('all');
   const [newComment, setNewComment] = useState<{ [postId: string]: string }>({});
   const [showComments, setShowComments] = useState<{ [postId: string]: boolean }>({});
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [newPost, setNewPost] = useState({
     type: 'progress' as Post['type'],
     content: '',
     tags: '',
     image: ''
   });
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setOpenDropdown(null);
+      }
+    };
+
+    if (openDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [openDropdown]);
 
   const filteredPosts = posts.filter(post => {
     if (filter === 'all') return true;
@@ -332,19 +350,19 @@ export const CommunityBoard: React.FC<CommunityBoardProps> = ({
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
                   <img
-                    src={post.user.avatar}
-                    alt={post.user.name}
+                    src={post.user?.avatar || '/api/placeholder/40/40'}
+                    alt={post.user?.name || 'User'}
                     className="w-10 h-10 rounded-full"
                   />
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-primary">
-                        {post.user.name}
+                        {post.user?.name || 'Unknown User'}
                       </h3>
                       <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                        Level {post.user.level}
+                        Level {post.user?.level || 1}
                       </span>
-                      {post.user.skill && (
+                      {post.user?.skill && (
                         <span className="text-xs text-gray-500">
                           • {post.user.skill}
                         </span>
@@ -367,10 +385,41 @@ export const CommunityBoard: React.FC<CommunityBoardProps> = ({
                 </div>
                 
                 {/* Post Actions Dropdown */}
-                <div className="relative">
-                  <button className="p-2 text-secondary/60 hover:text-secondary rounded-full hover:bg-gray-100 transition-colors">
+                <div className="relative dropdown-container">
+                  <button 
+                    onClick={() => setOpenDropdown(openDropdown === post.id ? null : post.id)}
+                    className="p-2 text-secondary/60 hover:text-secondary rounded-full hover:bg-gray-100 transition-colors"
+                  >
                     <MoreVertical className="w-4 h-4" />
                   </button>
+                  {openDropdown === post.id && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                      {post.user.id === currentUser.id && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to delete this post?')) {
+                              onDeletePost(post.id);
+                              setOpenDropdown(null);
+                            }
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete Post
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          onReportPost(post.id);
+                          setOpenDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <Flag className="w-4 h-4" />
+                        Report Post
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

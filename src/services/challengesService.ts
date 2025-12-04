@@ -74,12 +74,7 @@ export const challengesService = {
             is_active,
             completion_status
           ),
-          challenge_skills(skill_name),
-          users!challenges_creator_id_fkey(
-            id,
-            display_name,
-            avatar_url
-          )
+          challenge_skills(skill_name)
         `)
         .eq('privacy', 'public')
 
@@ -107,11 +102,30 @@ export const challengesService = {
 
       if (error) throw error
 
+      // Fetch creator profiles for all challenges
+      const challengeIds = (data || []).map(c => c.creator_id).filter(Boolean)
+      let creatorProfiles: any = {}
+      
+      if (challengeIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('user_profiles')
+          .select('user_id, display_name, avatar_url')
+          .in('user_id', challengeIds)
+        
+        profiles?.forEach(profile => {
+          creatorProfiles[profile.user_id] = profile
+        })
+      }
+
       return (data || []).map(challenge => ({
         ...challenge,
         participants: challenge.challenge_participants || [],
         skills: (challenge.challenge_skills || []).map((s: any) => s.skill_name),
-        creator: challenge.users || undefined
+        creator: challenge.creator_id && creatorProfiles[challenge.creator_id] ? {
+          id: creatorProfiles[challenge.creator_id].user_id,
+          display_name: creatorProfiles[challenge.creator_id].display_name,
+          avatar_url: creatorProfiles[challenge.creator_id].avatar_url
+        } : undefined
       }))
     } catch (error) {
       console.error('Error fetching public challenges:', error)
@@ -435,6 +449,37 @@ export const challengesService = {
     } catch (error) {
       console.error('Error searching challenges:', error)
       return []
+    }
+  },
+
+  // Delete a challenge (only by creator)
+  async deleteChallenge(challengeId: string, userId: string) {
+    try {
+      // First verify the user is the creator
+      const { data: challenge, error: fetchError } = await supabase
+        .from('challenges')
+        .select('creator_id')
+        .eq('id', challengeId)
+        .single()
+
+      if (fetchError) throw fetchError
+      
+      if (challenge.creator_id !== userId) {
+        throw new Error('Only the creator can delete this challenge')
+      }
+
+      // Delete the challenge (cascade will handle related records)
+      const { error: deleteError } = await supabase
+        .from('challenges')
+        .delete()
+        .eq('id', challengeId)
+
+      if (deleteError) throw deleteError
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error deleting challenge:', error)
+      throw error
     }
   }
 }

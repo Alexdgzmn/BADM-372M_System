@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trophy, Medal, Star, TrendingUp, Users, Filter, Crown } from 'lucide-react';
+import { Trophy, Medal, Star, TrendingUp, Users, Filter, Crown, RefreshCw } from 'lucide-react';
 
 interface LeaderboardUser {
   id: string;
@@ -19,11 +19,13 @@ interface LeaderboardUser {
 interface LeaderboardsProps {
   users: LeaderboardUser[];
   currentUser: LeaderboardUser;
+  onRefresh?: () => void;
 }
 
 export const Leaderboards: React.FC<LeaderboardsProps> = ({
   users,
-  currentUser
+  currentUser,
+  onRefresh
 }) => {
   const [activeTab, setActiveTab] = useState<'global' | 'friends' | 'weekly' | 'skills'>('global');
   const [selectedSkill, setSelectedSkill] = useState<string>('all');
@@ -66,17 +68,28 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
   return (
     <div className="max-w-4xl mx-auto p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white mb-2">Leaderboards</h1>
-        <p className="text-white/70">See how you stack up with the community</p>
+      <div className="mb-6 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Leaderboards</h1>
+          <p className="text-white/70">See how you stack up with the community</p>
+        </div>
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        )}
       </div>
 
       {/* Current User Highlight */}
       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 mb-6 border border-white/20">
         <div className="flex items-center gap-4">
           <img
-            src={currentUser.avatar}
-            alt={currentUser.name}
+            src={currentUser?.avatar || '/api/placeholder/48/48'}
+            alt={currentUser?.name || 'User'}
             className="w-16 h-16 rounded-full border-4 border-secondary/30"
           />
           <div className="flex-1">
@@ -198,8 +211,8 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
                 {/* User Info */}
                 <div className="flex items-center gap-3 flex-1">
                   <img
-                    src={user.avatar}
-                    alt={user.name}
+                    src={user?.avatar || '/api/placeholder/48/48'}
+                    alt={user?.name || 'User'}
                     className="w-12 h-12 rounded-full"
                   />
                   <div>
@@ -278,37 +291,45 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
       </div>
 
       {/* Achievement Spotlights */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200">
-          <div className="flex items-center gap-2 mb-2">
-            <Crown className="w-5 h-5 text-yellow-600" />
-            <span className="font-semibold text-yellow-800">Top Performer</span>
+      {users.length > 0 ? (
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200">
+            <div className="flex items-center gap-2 mb-2">
+              <Crown className="w-5 h-5 text-yellow-600" />
+              <span className="font-semibold text-yellow-800">Top Performer</span>
+            </div>
+            <div className="text-sm text-yellow-700">
+              Most XP this week: <strong>{users[0]?.name}</strong>
+            </div>
           </div>
-          <div className="text-sm text-yellow-700">
-            Most XP this week: <strong>{users[0]?.name}</strong>
-          </div>
-        </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-5 h-5 text-green-600" />
-            <span className="font-semibold text-green-800">Longest Streak</span>
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-5 h-5 text-green-600" />
+              <span className="font-semibold text-green-800">Longest Streak</span>
+            </div>
+            <div className="text-sm text-green-700">
+              {Math.max(...users.map(u => u.streak))} days by <strong>{users.find(u => u.streak === Math.max(...users.map(u => u.streak)))?.name}</strong>
+            </div>
           </div>
-          <div className="text-sm text-green-700">
-            {Math.max(...users.map(u => u.streak))} days by <strong>{users.find(u => u.streak === Math.max(...users.map(u => u.streak)))?.name}</strong>
-          </div>
-        </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
-          <div className="flex items-center gap-2 mb-2">
-            <Star className="w-5 h-5 text-purple-600" />
-            <span className="font-semibold text-purple-800">Mission Master</span>
-          </div>
-          <div className="text-sm text-purple-700">
-            Most missions: <strong>{users.reduce((prev, current) => (prev.completedMissions > current.completedMissions) ? prev : current).name}</strong>
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+            <div className="flex items-center gap-2 mb-2">
+              <Star className="w-5 h-5 text-purple-600" />
+              <span className="font-semibold text-purple-800">Mission Master</span>
+            </div>
+            <div className="text-sm text-purple-700">
+              Most missions: <strong>{users.reduce((prev, current) => (prev.completedMissions > current.completedMissions) ? prev : current).name}</strong>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="mt-8 bg-gray-50 rounded-xl p-8 text-center border-2 border-dashed border-gray-300">
+          <Trophy className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-600 font-medium">No achievements yet</p>
+          <p className="text-sm text-gray-500 mt-1">Complete missions to appear on the leaderboard!</p>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,6 +5,9 @@ import type { User } from '@supabase/supabase-js'
 export interface UserProfile {
   id: string
   user_id: string
+  username?: string
+  display_name?: string
+  avatar_url?: string
   bio?: string
   location?: string
   website?: string
@@ -162,8 +165,12 @@ export const userService = {
     try {
       const { data, error } = await supabase
         .from('user_profiles')
-        .update(updates)
-        .eq('user_id', userId)
+        .upsert({
+          user_id: userId,
+          ...updates
+        }, {
+          onConflict: 'user_id'
+        })
         .select()
         .single()
 

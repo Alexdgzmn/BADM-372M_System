@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AuthPage } from './components/AuthPage';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { supabase } from './lib/database';
 import { 
   generateMissionForSkill, 
   calculateLevelFromExperience, 
@@ -63,9 +64,13 @@ function AppContent() {
   const [friendRequests, setFriendRequests] = useLocalStorage<FriendRequest[]>('system-friend-requests', []);
   const [allUsers] = useLocalStorage<UserProfile[]>('system-all-users', []); // Mock user database
   
-  // Real posts from Supabase
+  // Real data from Supabase
   const [realPosts, setRealPosts] = useState<SocialPost[]>([]);
+  const [realChallenges, setRealChallenges] = useState<Challenge[]>([]);
+  const [realLeaderboard, setRealLeaderboard] = useState<LeaderboardUser[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [isLoadingChallenges, setIsLoadingChallenges] = useState(true);
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
   const [isLoadingUserData, setIsLoadingUserData] = useState(true);
 
   // Load user data from database on login
@@ -116,7 +121,7 @@ function AppContent() {
         if (profile) {
           setUserProfile({
             displayName: profile.display_name || '',
-            nickname: '', // Nickname not in user_profiles table
+            nickname: profile.username || '', // nickname is stored as username in database
             avatar: profile.avatar_url || '',
           });
           console.log('✅ User profile loaded from database');
@@ -158,51 +163,65 @@ function AppContent() {
   // Fetch real posts from Supabase
   useEffect(() => {
     const fetchPosts = async () => {
-      if (!user?.id) return;
+      if (!user?.id) {
+        setIsLoadingPosts(false);
+        return;
+      }
       
       try {
+        console.log('📥 Loading posts from database...');
         const { communityService } = await import('./services/communityService');
         const posts = await communityService.getPublicPosts({ userId: user.id });
         
-        // Convert Supabase posts to app format
-        const formattedPosts: SocialPost[] = posts.map(post => ({
-          id: post.id,
-          userId: post.user_id,
-          user: {
-            id: post.user.id,
-            name: post.user.display_name,
-            avatar: post.user.avatar_url || '/api/placeholder/40/40',
-            level: post.user.level || 1,
-            skill: post.user.skill
-          },
-          type: post.type as any,
-          content: post.content,
-          timestamp: new Date(post.created_at),
-          likes: post.likes_count,
-          comments: post.comments.map(comment => ({
-            id: comment.id,
-            postId: post.id,
-            userId: comment.user_id,
+        console.log('Raw posts from DB:', posts);
+        
+        // Convert Supabase posts to app format with null checks
+        const formattedPosts: SocialPost[] = posts
+          .filter(post => post.user?.id) // Only include posts with valid user data
+          .map(post => ({
+            id: post.id,
+            userId: post.user_id,
             user: {
-              id: comment.user.id,
-              name: comment.user.display_name,
-              avatar: comment.user.avatar_url || '/api/placeholder/32/32',
-              level: comment.user.level || 1
+              id: post.user.id,
+              name: post.user.display_name || 'Unknown User',
+              avatar: post.user.avatar_url || '/api/placeholder/40/40',
+              level: post.user.level || 1,
+              skill: post.user.skill || ''
             },
-            content: comment.content,
-            timestamp: new Date(comment.created_at),
-            likes: comment.likes_count,
-            isLiked: comment.is_liked || false
-          })),
-          isLiked: post.is_liked,
-          tags: post.tags as string[],
-          visibility: post.visibility as any,
-          image: post.image_url
-        }));
+            type: post.type as any,
+            content: post.content,
+            timestamp: new Date(post.created_at),
+            likes: post.likes_count,
+            comments: (post.comments || [])
+              .filter(comment => comment.user?.id) // Only include comments with valid user data
+              .map(comment => ({
+                id: comment.id,
+                postId: post.id,
+                userId: comment.user_id,
+                user: {
+                  id: comment.user.id,
+                  name: comment.user.display_name || 'Unknown User',
+                  avatar: comment.user.avatar_url || '/api/placeholder/32/32',
+                  level: comment.user.level || 1
+                },
+                content: comment.content,
+                timestamp: new Date(comment.created_at),
+                likes: comment.likes_count,
+                isLiked: comment.is_liked || false
+              })),
+            isLiked: post.is_liked,
+            tags: (post.tags as string[]) || [],
+            visibility: post.visibility as any,
+            image: post.image_url
+          }));
         
         setRealPosts(formattedPosts);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
+        console.log(`✅ Loaded ${formattedPosts.length} posts from database`);
+      } catch (error: any) {
+        console.error('❌ Error fetching posts:', error);
+        console.error('Error details:', error.message, error.stack);
+        // Set empty array on error so UI doesn't break
+        setRealPosts([]);
       } finally {
         setIsLoadingPosts(false);
       }
@@ -210,6 +229,208 @@ function AppContent() {
     
     fetchPosts();
   }, [user?.id]);
+
+  // Fetch challenges from Supabase
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      if (!user?.id) {
+        setIsLoadingChallenges(false);
+        return;
+      }
+      
+      try {
+        console.log('📥 Loading challenges from database...');
+        const { challengesService } = await import('./services/challengesService');
+        const publicChallenges = await challengesService.getPublicChallenges({ status: 'active' });
+        
+        console.log('Raw challenges from DB:', publicChallenges);
+        
+        // Convert database challenges to app format
+        const formattedChallenges: Challenge[] = publicChallenges.map(challenge => ({
+          id: challenge.id,
+          title: challenge.title,
+          description: challenge.description,
+          type: challenge.type,
+          duration: challenge.duration,
+          startDate: new Date(challenge.start_date),
+          endDate: new Date(challenge.end_date),
+          skills: challenge.skills || [],
+          participants: (challenge.participants || []).map(p => ({
+            id: p.id,
+            userId: p.user_id,
+            name: '', // Will be populated from user_profiles
+            avatar: '/api/placeholder/32/32',
+            joinedAt: new Date(p.joined_at),
+            progress: p.progress_percentage,
+            tasksCompleted: p.tasks_completed,
+            lastActivity: new Date(p.last_activity),
+            isActive: p.is_active
+          })),
+          privacy: challenge.privacy,
+          creator: challenge.creator ? {
+            id: challenge.creator.id,
+            name: challenge.creator.display_name,
+            avatar: challenge.creator.avatar_url || '/api/placeholder/32/32'
+          } : undefined,
+          rules: challenge.rules || [],
+          tags: challenge.tags || [],
+          status: challenge.status,
+          progress: {
+            totalTasks: challenge.participants?.[0]?.total_tasks || 0,
+            completedTasks: challenge.participants?.[0]?.tasks_completed || 0,
+            participantProgress: {}
+          },
+          isJoined: challenge.is_joined || false
+        }));
+        
+        setRealChallenges(formattedChallenges);
+        console.log(`✅ Loaded ${formattedChallenges.length} challenges from database`);
+      } catch (error: any) {
+        console.error('❌ Error fetching challenges:', error);
+        console.error('Error details:', error.message, error.stack);
+        // Set empty array on error so UI doesn't break
+        setRealChallenges([]);
+      } finally {
+        setIsLoadingChallenges(false);
+      }
+    };
+    
+    fetchChallenges();
+  }, [user?.id]);
+
+  // Fetch leaderboard from Supabase
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      console.log('🔄 LEADERBOARD EFFECT TRIGGERED - user.id:', user?.id);
+      
+      if (!user?.id) {
+        console.log('⚠️ No user ID, skipping leaderboard fetch');
+        setIsLoadingLeaderboard(false);
+        return;
+      }
+      
+      try {
+        console.log('📥 Loading leaderboard from database...');
+        
+        // Query user_profiles
+        const { data: profiles, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('user_id, display_name, avatar_url');
+        
+        if (profilesError) throw profilesError;
+        
+        // Query user_progress
+        const { data: progressData, error: progressError } = await supabase
+          .from('user_progress')
+          .select('user_id, total_level, total_experience, current_streak, missions_completed');
+        
+        if (progressError) throw progressError;
+        
+        console.log('📊 Profiles:', profiles?.length, 'Progress records:', progressData?.length);
+        
+        // Create a map of user progress
+        const progressMap = new Map(
+          (progressData || []).map(p => [p.user_id, p])
+        );
+        
+        // Join profiles with progress
+        const formattedLeaderboard: LeaderboardUser[] = (profiles || [])
+          .filter(profile => progressMap.has(profile.user_id))
+          .map(profile => {
+            const progress = progressMap.get(profile.user_id)!;
+            return {
+              id: profile.user_id,
+              name: profile.display_name || 'Unknown User',
+              avatar: profile.avatar_url || '/api/placeholder/48/48',
+              level: progress.total_level || 1,
+              xp: progress.total_experience || 0,
+              weeklyXP: 0,
+              streak: progress.current_streak || 0,
+              completedMissions: progress.missions_completed || 0,
+              rank: 0,
+              badges: [],
+              favoriteSkill: '',
+              isCurrentUser: profile.user_id === user.id
+            };
+          })
+          .sort((a, b) => b.xp - a.xp)
+          .map((leaderboardUser, index) => ({
+            ...leaderboardUser,
+            rank: index + 1
+          }));
+        
+        setRealLeaderboard(formattedLeaderboard);
+        console.log(`✅ Loaded ${formattedLeaderboard.length} users on leaderboard`);
+      } catch (error: any) {
+        console.error('❌ Error fetching leaderboard:', error);
+        console.error('Error details:', error.message, error.stack);
+        setRealLeaderboard([]);
+      } finally {
+        setIsLoadingLeaderboard(false);
+      }
+    };
+    
+    fetchLeaderboard();
+  }, [user?.id]);
+
+  // Helper function to refresh leaderboard
+  const refreshLeaderboard = async () => {
+    if (!user?.id) return;
+    
+    try {
+      console.log('🔄 Refreshing leaderboard...');
+      
+      // Query user_profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('user_id, display_name, avatar_url');
+      
+      if (profilesError) throw profilesError;
+      
+      // Query user_progress
+      const { data: progressData, error: progressError } = await supabase
+        .from('user_progress')
+        .select('user_id, total_level, total_experience, current_streak, missions_completed');
+      
+      if (progressError) throw progressError;
+      
+      // Create a map of user progress
+      const progressMap = new Map(
+        (progressData || []).map(p => [p.user_id, p])
+      );
+      
+      // Join profiles with progress
+      const formattedLeaderboard: LeaderboardUser[] = (profiles || [])
+        .filter(profile => progressMap.has(profile.user_id))
+        .map(profile => {
+          const progress = progressMap.get(profile.user_id)!;
+          return {
+            id: profile.user_id,
+            name: profile.display_name || 'Unknown User',
+            avatar: profile.avatar_url || '/api/placeholder/48/48',
+            level: progress.total_level || 1,
+            xp: progress.total_experience || 0,
+            weeklyXP: 0,
+            streak: progress.current_streak || 0,
+            completedMissions: progress.missions_completed || 0,
+            rank: 0,
+            badges: [],
+            favoriteSkill: '',
+            isCurrentUser: profile.user_id === user.id
+          };
+        })
+        .sort((a, b) => b.xp - a.xp)
+        .map((leaderboardUser, index) => ({
+          ...leaderboardUser,
+          rank: index + 1
+        }));
+      
+      setRealLeaderboard(formattedLeaderboard);
+      console.log(`✅ Leaderboard refreshed: ${formattedLeaderboard.length} users`);
+    } catch (error) {
+      console.error('❌ Error refreshing leaderboard:', error);
+    }
+  };
 
   // Helper function to refresh posts
   const refreshPosts = async () => {
@@ -696,6 +917,8 @@ function AppContent() {
               console.error('❌ Failed to save progress to database:', result.error);
             } else {
               console.log('✅ Progress saved to database successfully:', result.data);
+              // Refresh leaderboard after progress update
+              refreshLeaderboard();
             }
           }).catch(err => {
             console.error('❌ Error saving to database:', err);
@@ -710,15 +933,102 @@ function AppContent() {
   };
 
   // Social feature handlers
-  const handleJoinChallenge = (challengeId: string) => {
-    console.log('Joining challenge:', challengeId);
-    // In real app, this would call API to join challenge
+  const handleJoinChallenge = async (challengeId: string) => {
+    if (!user?.id) {
+      alert('You must be logged in to join challenges');
+      return;
+    }
+
+    // Check if this is a real database challenge (UUID format)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(challengeId)) {
+      alert('This is a demo challenge. Please create a real challenge to participate!');
+      return;
+    }
+
+    console.log('💾 Joining challenge:', challengeId);
+    try {
+      const { challengesService } = await import('./services/challengesService');
+      const { data, error } = await challengesService.joinChallenge(challengeId, user.id);
+      
+      if (error) {
+        console.error('❌ Failed to join challenge:', error);
+        alert('Failed to join challenge. Please try again.');
+      } else {
+        console.log('✅ Successfully joined challenge');
+        // Update local state
+        setRealChallenges(prev => prev.map(c => 
+          c.id === challengeId ? { ...c, isJoined: true } : c
+        ));
+      }
+    } catch (error) {
+      console.error('❌ Error joining challenge:', error);
+      alert('Failed to join challenge. Please try again.');
+    }
   };
 
-  const handleCreateChallenge = (challengeData: any) => {
-    console.log('Creating challenge:', challengeData);
-    setIsCreateChallengeModalOpen(false);
-    // In real app, this would call API to create challenge
+  const handleCreateChallenge = async (challengeData: any) => {
+    if (!user?.id) {
+      alert('You must be logged in to create challenges');
+      return;
+    }
+
+    console.log('💾 Creating challenge with data:', challengeData);
+    try {
+      const { challengesService } = await import('./services/challengesService');
+      
+      // Prepare challenge data with proper validation
+      const challengePayload = {
+        title: challengeData.title,
+        description: challengeData.description,
+        type: challengeData.type as 'quest' | 'sprint' | 'marathon' | 'daily',
+        duration: parseInt(challengeData.duration) || 7,
+        start_date: challengeData.startDate || new Date().toISOString(),
+        end_date: challengeData.endDate || new Date(Date.now() + (parseInt(challengeData.duration) || 7) * 24 * 60 * 60 * 1000).toISOString(),
+        skills: Array.isArray(challengeData.skills) ? challengeData.skills : [],
+        difficulty: challengeData.difficulty as 'easy' | 'medium' | 'hard' | undefined,
+        privacy: (challengeData.privacy || 'public') as 'public' | 'private' | 'friends',
+        rules: Array.isArray(challengeData.rules) ? challengeData.rules : [],
+        tags: Array.isArray(challengeData.tags) ? challengeData.tags : [],
+        reward_xp: parseInt(challengeData.rewardXP) || 100
+      };
+      
+      console.log('💾 Sending to database:', challengePayload);
+      const { data, error } = await challengesService.createChallenge(user.id, challengePayload);
+      
+      if (error) {
+        console.error('❌ Failed to create challenge:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        alert(`Failed to create challenge: ${error.message || 'Please try again.'}`);
+      } else {
+        console.log('✅ Challenge created successfully:', data);
+        setIsCreateChallengeModalOpen(false);
+        // Reload challenges to show the new one
+        const publicChallenges = await challengesService.getPublicChallenges({ status: 'active' });
+        setRealChallenges(publicChallenges.map(challenge => ({
+          id: challenge.id,
+          title: challenge.title,
+          description: challenge.description,
+          type: challenge.type,
+          duration: challenge.duration,
+          startDate: new Date(challenge.start_date),
+          endDate: new Date(challenge.end_date),
+          skills: challenge.skills,
+          participants: [],
+          privacy: challenge.privacy,
+          creator: challenge.creator,
+          rules: challenge.rules,
+          tags: challenge.tags,
+          status: challenge.status,
+          progress: { totalTasks: 0, completedTasks: 0, participantProgress: {} },
+          isJoined: false
+        })));
+      }
+    } catch (error: any) {
+      console.error('❌ Error creating challenge:', error);
+      console.error('Error stack:', error.stack);
+      alert(`Failed to create challenge: ${error.message || 'Please try again.'}`);
+    }
   };
 
   const handleLikePost = async (postId: string) => {
@@ -804,6 +1114,44 @@ function AppContent() {
     }
   };
 
+  const handleDeletePost = async (postId: string) => {
+    if (!user?.id) {
+      alert('You must be logged in to delete a post');
+      return;
+    }
+
+    try {
+      const { communityService } = await import('./services/communityService');
+      await communityService.deletePost(postId, user.id);
+      
+      alert('Post deleted successfully!');
+      // Refresh posts to remove the deleted one
+      await refreshPosts();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Failed to delete post. ' + (error instanceof Error ? error.message : 'Please try again.'));
+    }
+  };
+
+  const handleDeleteChallenge = async (challengeId: string) => {
+    if (!user?.id) {
+      alert('You must be logged in to delete a challenge');
+      return;
+    }
+
+    try {
+      const { challengesService } = await import('./services/challengesService');
+      await challengesService.deleteChallenge(challengeId, user.id);
+      
+      alert('Challenge deleted successfully!');
+      // Refresh challenges to remove the deleted one
+      setRealChallenges(prev => prev.filter(c => c.id !== challengeId));
+    } catch (error) {
+      console.error('Error deleting challenge:', error);
+      alert('Failed to delete challenge. ' + (error instanceof Error ? error.message : 'Please try again.'));
+    }
+  };
+
   // Profile handlers
   const handleEditProfile = () => {
     setProfileForm({
@@ -839,14 +1187,13 @@ function AppContent() {
       const { userService } = await import('./services/userService');
       const result = await userService.updateUserProfile(user.id, {
         display_name: newProfile.displayName,
-        // Note: Supabase schema doesn't have nickname in user_profiles, it's in users table
-        // You may need to update the users table instead
+        username: newProfile.nickname, // nickname maps to username in database
       });
       
       if (result.error) {
-        console.error('Failed to save profile to database:', result.error);
+        console.error('❌ Failed to save profile to database:', result.error);
       } else {
-        console.log('✅ Profile saved to database');
+        console.log('✅ Profile saved to database (display name & nickname)');
       }
     }
   };
@@ -1100,7 +1447,7 @@ function AppContent() {
             <div className="mb-8">
               <ChallengeRecommendations
                 userProfile={userRecommendationProfile}
-                availableChallenges={mockChallenges}
+                availableChallenges={realChallenges.length > 0 ? realChallenges : mockChallenges}
                 friendsActivity={friendsActivity}
                 onJoinChallenge={handleJoinChallenge}
               />
@@ -1110,56 +1457,60 @@ function AppContent() {
 
         {activeTab === 'challenges' && (
           <ChallengesHub
-            challenges={mockChallenges}
+            challenges={realChallenges.length > 0 ? realChallenges : mockChallenges}
             onJoinChallenge={handleJoinChallenge}
             onCreateChallenge={() => setIsCreateChallengeModalOpen(true)}
+            onDeleteChallenge={handleDeleteChallenge}
+            currentUserId={user?.id || ''}
           />
         )}
 
         {activeTab === 'community' && (
-          <div className="relative">
-            {/* Work in Progress Overlay */}
-            <div className="absolute inset-0 bg-primary/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
-              <div className="bg-secondary/95 p-8 rounded-xl shadow-2xl max-w-md text-center">
-                <div className="text-6xl mb-4">🚧</div>
-                <h3 className="text-2xl font-bold text-primary mb-2">Work in Progress</h3>
-                <p className="text-primary/70">This feature is currently under development. Check back soon!</p>
-              </div>
-            </div>
-            {/* Original Component (hidden but functional) */}
-            <div className="opacity-20 pointer-events-none">
-              <CommunityBoard
-                posts={realPosts}
-                currentUser={mockLeaderboardUsers[0]}
-                onLikePost={handleLikePost}
-                onLikeComment={(commentId) => console.log('Like comment:', commentId)}
-                onAddComment={handleAddComment}
-                onReportPost={handleReportPost}
-                onSharePost={handleSharePost}
-                onCreatePost={handleCreatePost}
-              />
-            </div>
-          </div>
+          <CommunityBoard
+            posts={realPosts}
+            currentUser={{
+              id: user?.id || '',
+              name: userProfile.displayName || user?.email || 'You',
+              avatar: userProfile.avatar || '/api/placeholder/48/48',
+              level: userProgress.totalLevel,
+              xp: userProgress.totalExperience,
+              weeklyXP: 0,
+              streak: userProgress.currentStreak,
+              completedMissions: userProgress.missionsCompleted,
+              rank: 0,
+              badges: [],
+              favoriteSkill: skills[0]?.name || '',
+              isCurrentUser: true
+            }}
+            onLikePost={handleLikePost}
+            onLikeComment={(commentId) => console.log('Like comment:', commentId)}
+            onAddComment={handleAddComment}
+            onReportPost={handleReportPost}
+            onSharePost={handleSharePost}
+            onCreatePost={handleCreatePost}
+            onDeletePost={handleDeletePost}
+          />
         )}
 
         {activeTab === 'leaderboards' && (
-          <div className="relative">
-            {/* Work in Progress Overlay */}
-            <div className="absolute inset-0 bg-primary/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
-              <div className="bg-secondary/95 p-8 rounded-xl shadow-2xl max-w-md text-center">
-                <div className="text-6xl mb-4">🚧</div>
-                <h3 className="text-2xl font-bold text-primary mb-2">Work in Progress</h3>
-                <p className="text-primary/70">This feature is currently under development. Check back soon!</p>
-              </div>
-            </div>
-            {/* Original Component (hidden but functional) */}
-            <div className="opacity-20 pointer-events-none">
-              <Leaderboards
-                users={mockLeaderboardUsers}
-                currentUser={mockLeaderboardUsers[0]}
-              />
-            </div>
-          </div>
+          <Leaderboards
+            users={realLeaderboard}
+            currentUser={realLeaderboard.find(u => u.isCurrentUser) || {
+              id: user?.id || '',
+              name: userProfile.displayName || user?.email || 'You',
+              avatar: '/api/placeholder/48/48',
+              level: userProgress.totalLevel,
+              xp: userProgress.totalExperience,
+              weeklyXP: 0,
+              streak: userProgress.currentStreak,
+              completedMissions: userProgress.missionsCompleted,
+              rank: 0,
+              badges: [],
+              favoriteSkill: skills[0]?.name || '',
+              isCurrentUser: true
+            }}
+            onRefresh={refreshLeaderboard}
+          />
         )}
 
         {activeTab === 'profile' && (

@@ -97,26 +97,8 @@ export const communityService = {
         .from('social_posts')
         .select(`
           *,
-          user_profiles(
-            user_id,
-            display_name,
-            avatar_url
-          ),
           post_comments(
-            *,
-            user_profiles(
-              user_id,
-              display_name,
-              avatar_url
-            )
-          ),
-          challenges(
-            id,
-            title
-          ),
-          user_skills(
-            id,
-            name
+            *
           )
         `)
         .eq('visibility', 'public')
@@ -137,8 +119,25 @@ export const communityService = {
 
       if (error) throw error
 
+      // Fetch all unique user IDs from posts and comments
+      const userIds = new Set<string>()
+      data?.forEach(post => {
+        userIds.add(post.user_id)
+        post.post_comments?.forEach((comment: any) => {
+          userIds.add(comment.user_id)
+        })
+      })
+
+      // Fetch user profiles for all users
+      const { data: profiles } = await supabase
+        .from('user_profiles')
+        .select('user_id, display_name, avatar_url')
+        .in('user_id', Array.from(userIds))
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || [])
+
+      // Check if current user liked each post and comment
       const posts = await Promise.all((data || []).map(async (post) => {
-        // Check if current user liked the post
         let isLiked = false
         if (options?.userId) {
           const { data: likeData } = await supabase
@@ -151,9 +150,9 @@ export const communityService = {
           isLiked = !!likeData
         }
 
-        // Check comment likes for current user
-        const commentsWithLikes = await Promise.all(post.post_comments.map(async (comment: any) => {
-          let isCommentLiked = false
+        // Map comments with user profiles and like status
+        const commentsWithLikes = await Promise.all((post.post_comments || []).map(async (comment: any) => {
+          let commentLiked = false
           if (options?.userId) {
             const { data: commentLikeData } = await supabase
               .from('comment_likes')
@@ -162,34 +161,36 @@ export const communityService = {
               .eq('user_id', options.userId)
               .single()
             
-            isCommentLiked = !!commentLikeData
+            commentLiked = !!commentLikeData
           }
 
+          const commentUserProfile = profileMap.get(comment.user_id)
           return {
             ...comment,
             user: {
-              id: comment.user_profiles?.user_id || '',
-              display_name: comment.user_profiles?.display_name || 'Unknown',
-              avatar_url: comment.user_profiles?.avatar_url || '',
+              id: commentUserProfile?.user_id || comment.user_id,
+              display_name: commentUserProfile?.display_name || 'Unknown User',
+              avatar_url: commentUserProfile?.avatar_url || '/api/placeholder/32/32',
               level: 1
             },
-            is_liked: isCommentLiked
+            is_liked: commentLiked
           }
         }))
 
+        const postUserProfile = profileMap.get(post.user_id)
         return {
           ...post,
           user: {
-            id: post.user_profiles?.user_id || '',
-            display_name: post.user_profiles?.display_name || 'Unknown',
-            avatar_url: post.user_profiles?.avatar_url || '',
+            id: postUserProfile?.user_id || post.user_id,
+            display_name: postUserProfile?.display_name || 'Unknown User',
+            avatar_url: postUserProfile?.avatar_url || '/api/placeholder/40/40',
             level: 1,
             skill: ''
           },
           comments: commentsWithLikes,
           is_liked: isLiked,
-          linked_challenge: post.challenges,
-          linked_skill: post.user_skills
+          linked_challenge: null,
+          linked_skill: null
         }
       }))
 
@@ -553,6 +554,37 @@ export const communityService = {
     } catch (error) {
       console.error('Error searching posts:', error)
       return []
+    }
+  },
+
+  // Delete a post (only by creator)
+  async deletePost(postId: string, userId: string) {
+    try {
+      // First verify the user is the creator
+      const { data: post, error: fetchError } = await supabase
+        .from('social_posts')
+        .select('user_id')
+        .eq('id', postId)
+        .single()
+
+      if (fetchError) throw fetchError
+      
+      if (post.user_id !== userId) {
+        throw new Error('Only the creator can delete this post')
+      }
+
+      // Delete the post (cascade will handle comments and likes)
+      const { error: deleteError } = await supabase
+        .from('social_posts')
+        .delete()
+        .eq('id', postId)
+
+      if (deleteError) throw deleteError
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error deleting post:', error)
+      throw error
     }
   }
 }
