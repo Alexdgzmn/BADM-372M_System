@@ -1290,7 +1290,11 @@ function AppContent() {
     
     try {
       const results = await friendsService.searchUsers(query, user.id);
-      return results;
+      // Convert null avatars to undefined for type compatibility
+      return results.map(r => ({
+        ...r,
+        avatar: r.avatar || undefined
+      }));
     } catch (error) {
       console.error('Error searching users:', error);
       return [];
@@ -1767,7 +1771,7 @@ function AppContent() {
         friends={friends}
         friendRequests={friendRequests}
         onSearchUsers={handleSearchUsers}
-        onSendRequest={handleSendFriendRequest}
+        onSendFriendRequest={handleSendFriendRequest}
         onAcceptRequest={handleAcceptRequest}
         onRejectRequest={handleRejectRequest}
         onRemoveFriend={handleRemoveFriend}

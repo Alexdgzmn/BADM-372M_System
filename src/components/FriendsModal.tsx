@@ -198,22 +198,22 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                 <p className="text-center text-gray-500 py-8">No pending friend requests</p>
               ) : (
                 pendingRequests.map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center overflow-hidden">
                         {request.senderAvatar ? (
-                          <img src={request.senderAvatar} alt={request.fromUserName} className="w-full h-full object-cover" />
+                          <img src={request.senderAvatar} alt={request.senderDisplayName} className="w-full h-full object-cover" />
                         ) : (
                           <Users className="w-6 h-6 text-primary" />
                         )}
                       </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-                        <Users className="w-6 h-6 text-primary" />
-                      </div>
                       <div>
-                        <p className="font-semibold text-primary">{request.fromUserName}</p>
-                        <p className="text-sm text-gray-600">@{request.fromUserNickname}</p>
-                        <p className="text-xs text-gray-500">Level {request.fromUserLevel}</p>
+                        <p className="font-semibold text-primary">{request.senderDisplayName}</p>
+                        <p className="text-sm text-gray-600">@{request.senderNickname}</p>
+                        <p className="text-xs text-gray-500">Level {request.senderLevel}</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
