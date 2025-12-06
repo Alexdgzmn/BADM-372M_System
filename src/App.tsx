@@ -1397,34 +1397,34 @@ function AppContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-primary font-body">
+    <div className="min-h-screen bg-gradient-to-br from-game-bg via-slate-900 to-game-bg font-body">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="bg-secondary p-3 rounded-xl shadow-lg">
+              <div className="bg-gradient-to-br from-primary to-secondary p-3 rounded-xl shadow-glow animate-float">
                 <img 
                   src="/logo.png" 
                   alt="The System Logo" 
                   className="w-8 h-8 object-contain"
                 />
               </div>
-              <h1 className="text-4xl font-bold font-headline text-white">
+              <h1 className="text-4xl font-bold font-headline bg-gradient-to-r from-secondary via-primary to-accent-purple bg-clip-text text-transparent">
                 THE SYSTEM
               </h1>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-sm text-secondary/80 font-body">Welcome back!</p>
+                <p className="text-sm text-accent-cyan/80 font-body">Welcome back!</p>
                 <p className="text-sm font-medium text-white font-body">
                   {userProfile.displayName || user.email}
-                  {userProfile.nickname && <span className="text-secondary ml-1">(@{userProfile.nickname})</span>}
+                  {userProfile.nickname && <span className="text-accent-cyan ml-1">(@{userProfile.nickname})</span>}
                 </p>
               </div>
               <button
                 onClick={signOut}
-                className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg transition-colors duration-200 shadow-sm"
+                className="bg-gradient-to-br from-game-card to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white p-2 rounded-lg transition-all duration-200 shadow-md border border-game-border hover:border-primary"
                 title="Sign out"
               >
                 <LogOut className="w-5 h-5" />
@@ -1435,15 +1435,15 @@ function AppContent() {
 
         {/* Navigation Tabs */}
         <div className="flex justify-center mb-8">
-          <div className="flex bg-white/10 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-1">
+          <div className="flex bg-gradient-to-r from-game-card to-slate-800/90 backdrop-blur-sm rounded-xl shadow-glow border-2 border-game-border p-1.5">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium font-body transition-all duration-200 ${
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium font-body transition-all duration-300 transform ${
                   activeTab === tab.id
-                    ? 'bg-secondary text-primary shadow-md'
-                    : 'text-sky-400 hover:text-white hover:bg-white/10'
+                    ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-glow scale-105'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50 hover:scale-102'
                 }`}
               >
                 <tab.icon className="w-4 h-4" />
@@ -1462,26 +1462,26 @@ function AppContent() {
             {/* Skills Section */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-secondary">Your Skills</h2>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-cyan to-primary bg-clip-text text-transparent">Your Skills</h2>
                 <button
                   onClick={() => setIsAddSkillModalOpen(true)}
-                  className="bg-secondary text-primary px-4 py-2 rounded-lg font-medium hover:bg-secondary/90 transition-all duration-200 flex items-center gap-2"
+                  className="btn-game flex items-center gap-2 group"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
                   Add Skill
                 </button>
               </div>
 
               {skills.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="bg-secondary w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Zap className="w-8 h-8 text-white" />
+                <div className="text-center py-12 card-game">
+                  <div className="level-badge mx-auto mb-4">
+                    <Zap className="w-8 h-8" />
                   </div>
-                  <h3 className="text-xl font-semibold text-secondary mb-2">Ready to Level Up?</h3>
-                  <p className="text-secondary/70 mb-4">Add your first skill to start your growth journey!</p>
+                  <h3 className="text-xl font-semibold text-white mb-2">Ready to Level Up?</h3>
+                  <p className="text-slate-400 mb-4">Add your first skill to start your growth journey!</p>
                   <button
                     onClick={() => setIsAddSkillModalOpen(true)}
-                    className="bg-secondary text-primary px-6 py-3 rounded-lg font-medium hover:bg-secondary/90 transition-all duration-200"
+                    className="btn-game"
                   >
                     Add Your First Skill
                   </button>

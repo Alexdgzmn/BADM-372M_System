@@ -7,9 +7,84 @@
 @layer base {
   body {
     @apply font-body;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;
   }
+}
+
+@layer components {
+  .card-game {
+    @apply bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border-2 border-slate-700 shadow-xl;
+    transition: all 0.3s ease;
+  }
+  
+  .card-game:hover {
+    @apply border-primary shadow-glow transform -translate-y-1;
+  }
+  
+  .btn-game {
+    @apply px-6 py-3 rounded-lg font-bold text-white shadow-lg;
+    @apply bg-gradient-to-r from-primary to-secondary;
+    @apply hover:shadow-glow-lg transform hover:scale-105;
+    @apply transition-all duration-300;
+  }
+  
+  .btn-game:active {
+    @apply scale-95;
+  }
+  
+  .progress-bar {
+    @apply relative h-4 bg-slate-700 rounded-full overflow-hidden;
+  }
+  
+  .progress-fill {
+    @apply h-full bg-gradient-to-r from-primary to-secondary rounded-full;
+    @apply shadow-glow;
+    transition: width 0.5s ease;
+  }
+  
+  .badge-game {
+    @apply px-3 py-1 rounded-full text-sm font-bold;
+    @apply bg-gradient-to-r from-accent-purple to-accent-pink;
+    @apply shadow-glow-purple;
+  }
+  
+  .stat-card {
+    @apply bg-gradient-to-br from-slate-800/90 to-slate-900/90;
+    @apply rounded-xl p-6 border-2 border-slate-700;
+    @apply hover:border-primary transition-all duration-300;
+  }
+  
+  .level-badge {
+    @apply inline-flex items-center justify-center;
+    @apply w-16 h-16 rounded-full;
+    @apply bg-gradient-to-br from-accent-gold to-accent-orange;
+    @apply text-2xl font-bold text-white;
+    @apply shadow-glow-gold;
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .xp-bar {
+    @apply relative h-6 bg-slate-700/50 rounded-full overflow-hidden;
+    @apply border-2 border-slate-600;
+  }
+  
+  .xp-fill {
+    @apply h-full bg-gradient-to-r from-accent-cyan via-primary to-secondary;
+    @apply shadow-glow;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.5); }
+  50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.8); }
 }
