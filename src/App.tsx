@@ -1403,23 +1403,23 @@ function AppContent() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-primary to-secondary p-3 rounded-xl shadow-glow animate-float">
+              <div className="bg-gradient-to-br from-primary to-secondary p-3 rounded-xl shadow-glow">
                 <img 
                   src="/logo.png" 
                   alt="The System Logo" 
                   className="w-8 h-8 object-contain"
                 />
               </div>
-              <h1 className="text-4xl font-bold font-headline bg-gradient-to-r from-secondary via-primary to-accent-purple bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold font-headline text-secondary">
                 THE SYSTEM
               </h1>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-sm text-accent-cyan/80 font-body">Welcome back!</p>
+                <p className="text-sm text-secondary/80 font-body">Welcome back!</p>
                 <p className="text-sm font-medium text-white font-body">
                   {userProfile.displayName || user.email}
-                  {userProfile.nickname && <span className="text-accent-cyan ml-1">(@{userProfile.nickname})</span>}
+                  {userProfile.nickname && <span className="text-secondary ml-1">(@{userProfile.nickname})</span>}
                 </p>
               </div>
               <button
@@ -1462,7 +1462,7 @@ function AppContent() {
             {/* Skills Section */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-cyan to-primary bg-clip-text text-transparent">Your Skills</h2>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-secondary to-white bg-clip-text text-transparent">Your Skills</h2>
                 <button
                   onClick={() => setIsAddSkillModalOpen(true)}
                   className="btn-game flex items-center gap-2 group"

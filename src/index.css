@@ -7,7 +7,7 @@
 @layer base {
   body {
     @apply font-body;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    background: linear-gradient(135deg, #1a2332 0%, #254E70 100%);
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -17,17 +17,17 @@
 
 @layer components {
   .card-game {
-    @apply bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border-2 border-slate-700 shadow-xl;
+    @apply bg-gradient-to-br from-game-card to-slate-800 rounded-xl border-2 border-accent-purple shadow-xl;
     transition: all 0.3s ease;
   }
   
   .card-game:hover {
-    @apply border-primary shadow-glow transform -translate-y-1;
+    @apply border-secondary shadow-glow transform -translate-y-1;
   }
   
   .btn-game {
     @apply px-6 py-3 rounded-lg font-bold text-white shadow-lg;
-    @apply bg-gradient-to-r from-primary to-secondary;
+    @apply bg-gradient-to-r from-primary to-accent-purple;
     @apply hover:shadow-glow-lg transform hover:scale-105;
     @apply transition-all duration-300;
   }
@@ -48,14 +48,14 @@
   
   .badge-game {
     @apply px-3 py-1 rounded-full text-sm font-bold;
-    @apply bg-gradient-to-r from-accent-purple to-accent-pink;
-    @apply shadow-glow-purple;
+    @apply bg-gradient-to-r from-primary to-secondary;
+    @apply shadow-glow;
   }
   
   .stat-card {
-    @apply bg-gradient-to-br from-slate-800/90 to-slate-900/90;
-    @apply rounded-xl p-6 border-2 border-slate-700;
-    @apply hover:border-primary transition-all duration-300;
+    @apply bg-gradient-to-br from-game-card/90 to-slate-800/90;
+    @apply rounded-xl p-6 border-2 border-accent-purple;
+    @apply hover:border-secondary transition-all duration-300;
   }
   
   .level-badge {
@@ -69,11 +69,11 @@
   
   .xp-bar {
     @apply relative h-6 bg-slate-700/50 rounded-full overflow-hidden;
-    @apply border-2 border-slate-600;
+    @apply border-2 border-accent-purple;
   }
   
   .xp-fill {
-    @apply h-full bg-gradient-to-r from-accent-cyan via-primary to-secondary;
+    @apply h-full bg-gradient-to-r from-primary via-accent-purple to-secondary;
     @apply shadow-glow;
     transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -85,6 +85,6 @@
 }
 
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.5); }
-  50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.8); }
+  0%, 100% { box-shadow: 0 0 20px rgba(142, 227, 239, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(142, 227, 239, 0.6); }
 }

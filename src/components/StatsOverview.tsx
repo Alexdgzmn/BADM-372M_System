@@ -32,7 +32,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ progress }) => {
                 <div className="text-3xl font-bold bg-gradient-to-r from-accent-gold to-accent-orange bg-clip-text text-transparent">
                   Level {progress.totalLevel}
                 </div>
-                <div className="text-sm text-slate-400">Total Level</div>
+                <div className="text-sm text-slate-300">Total Level</div>
               </div>
             </div>
             
@@ -50,7 +50,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ progress }) => {
           <div className="space-y-3">
             <div className="flex justify-between text-sm text-slate-400">
               <span className="font-medium">{xpIntoCurrentLevel.toLocaleString()} / {xpNeededForNextLevel.toLocaleString()} XP</span>
-              <span className="text-accent-cyan">{(xpNeededForNextLevel - xpIntoCurrentLevel).toLocaleString()} XP to level up</span>
+              <span className="text-secondary">{(xpNeededForNextLevel - xpIntoCurrentLevel).toLocaleString()} XP to level up</span>
             </div>
             <div className="xp-bar">
               <div
