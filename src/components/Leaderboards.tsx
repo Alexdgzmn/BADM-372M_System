@@ -29,6 +29,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'global' | 'friends' | 'weekly' | 'skills'>('global');
   const [selectedSkill, setSelectedSkill] = useState<string>('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Mock friends data (in real app, this would be filtered by friendship)
   const friends = users.filter(user => user.id !== currentUser.id).slice(0, 10);
@@ -65,6 +66,14 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
 
   const tabData = getTabData();
 
+  const handleRefresh = async () => {
+    if (onRefresh && !isRefreshing) {
+      setIsRefreshing(true);
+      await onRefresh();
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       {/* Header */}
@@ -75,10 +84,11 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
         </div>
         {onRefresh && (
           <button
-            onClick={onRefresh}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             Refresh
           </button>
         )}
