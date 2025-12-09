@@ -190,7 +190,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
 
         {/* Rankings List */}
         <div className="divide-y divide-secondary/5">
-          {tabData.map((user, index) => {
+          {tabData.slice(0, 5).map((user, index) => {
             const displayRank = index + 1;
             const isCurrentUser = user.id === currentUser.id;
             
@@ -275,6 +275,61 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
             );
           })}
         </div>
+
+        {/* Your Ranking Section - Show if user is not in top 5 */}
+        {tabData.findIndex(user => user.id === currentUser.id) >= 5 && (
+          <>
+            <div className="px-6 py-3 bg-gray-50 border-t border-secondary/10">
+              <div className="text-center text-sm text-gray-500">• • •</div>
+            </div>
+            <div className="p-6 flex items-center gap-4 bg-secondary/5 border-l-4 border-secondary">
+              {/* Rank */}
+              <div className="flex items-center justify-center w-10">
+                <span className="text-sm font-bold text-secondary">
+                  #{tabData.findIndex(user => user.id === currentUser.id) + 1}
+                </span>
+              </div>
+
+              {/* User Info */}
+              <div className="flex items-center gap-3 flex-1">
+                <img
+                  src={currentUser?.avatar || '/api/placeholder/48/48'}
+                  alt={currentUser?.name || 'User'}
+                  className="w-12 h-12 rounded-full border-2 border-secondary"
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold text-secondary">
+                      {currentUser.name}
+                      <span className="text-xs ml-1">(You)</span>
+                    </h4>
+                    <span className="text-xs bg-secondary/20 text-secondary px-2 py-0.5 rounded-full">
+                      Level {currentUser.level}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
+                    <span>{currentUser.favoriteSkill}</span>
+                    <span>•</span>
+                    <span>🔥 {currentUser.streak} days</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="text-right">
+                <div className="text-lg font-bold text-secondary">
+                  {activeTab === 'weekly' 
+                    ? `${currentUser.weeklyXP.toLocaleString()} XP`
+                    : `${currentUser.xp.toLocaleString()} XP`
+                  }
+                </div>
+                <div className="text-sm text-gray-600">
+                  {currentUser.completedMissions} missions
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Empty State */}
         {tabData.length === 0 && (
