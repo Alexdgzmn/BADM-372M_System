@@ -38,6 +38,7 @@ export default {
         'bounce-slow': 'bounce 2s infinite',
         'float': 'float 3s ease-in-out infinite',
         'glow': 'glow 2s ease-in-out infinite',
+        'slideIn': 'slideIn 0.5s ease-out',
       },
       keyframes: {
         float: {
@@ -47,6 +48,10 @@ export default {
         glow: {
           '0%, 100%': { boxShadow: '0 0 20px rgba(142, 227, 239, 0.4)' },
           '50%': { boxShadow: '0 0 30px rgba(142, 227, 239, 0.6)' },
+        },
+        slideIn: {
+          '0%': { transform: 'translateY(20px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
         },
       },
     },

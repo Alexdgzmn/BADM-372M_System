@@ -51,7 +51,7 @@ export const MissionCard: React.FC<MissionCardProps> = ({ mission, skill, onComp
   };
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border p-6 transition-all duration-200 ${
+    <div className={`bg-white rounded-xl shadow-sm border p-6 transition-all duration-200 animate-[slideIn_0.5s_ease-out] ${
       mission.isCompleted ? 'bg-secondary/5 border-secondary/20' : 'border-secondary/10 hover:shadow-md'
     }`}>
       <div className="flex items-start justify-between mb-4">

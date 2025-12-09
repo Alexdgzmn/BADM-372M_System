@@ -27,7 +27,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
   currentUser,
   onRefresh
 }) => {
-  const [activeTab, setActiveTab] = useState<'global' | 'friends' | 'weekly' | 'skills'>('global');
+  const [activeTab, setActiveTab] = useState<'global' | 'friends' | 'weekly' | 'skills' | 'all'>('global');
   const [selectedSkill, setSelectedSkill] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -45,8 +45,10 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
       case 'skills':
         if (selectedSkill === 'all') return users;
         return users.filter(user => user.favoriteSkill === selectedSkill);
-      default:
+      case 'all':
         return users;
+      default:
+        return users.slice(0, 5);
     }
   };
 
@@ -140,6 +142,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
           { id: 'friends', label: '👥 Friends', icon: Users },
           { id: 'weekly', label: '📅 This Week', icon: TrendingUp },
           { id: 'skills', label: '🎯 By Skill', icon: Star },
+          { id: 'all', label: '📊 All Rankings', icon: Medal },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -191,6 +194,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
               {activeTab === 'friends' && 'Friends Rankings'}
               {activeTab === 'weekly' && 'This Week\'s Top Performers'}
               {activeTab === 'skills' && `${selectedSkill === 'all' ? 'All Skills' : selectedSkill} Rankings`}
+              {activeTab === 'all' && 'Complete Rankings'}
             </h3>
             <span className="text-sm text-gray-500">
               {tabData.length} {tabData.length === 1 ? 'user' : 'users'}
@@ -200,7 +204,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
 
         {/* Rankings List */}
         <div className="divide-y divide-secondary/5">
-          {tabData.slice(0, 5).map((user, index) => {
+          {(activeTab === 'all' ? tabData : tabData.slice(0, 5)).map((user, index) => {
             const displayRank = index + 1;
             const isCurrentUser = user.id === currentUser.id;
             
@@ -286,8 +290,8 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({
           })}
         </div>
 
-        {/* Your Ranking Section - Show if user is not in top 5 */}
-        {tabData.findIndex(user => user.id === currentUser.id) >= 5 && (
+        {/* Your Ranking Section - Show if user is not in top 5 and not in 'all' tab */}
+        {activeTab !== 'all' && tabData.findIndex(user => user.id === currentUser.id) >= 5 && (
           <>
             <div className="px-6 py-3 bg-gray-50 border-t border-secondary/10">
               <div className="text-center text-sm text-gray-500">• • •</div>

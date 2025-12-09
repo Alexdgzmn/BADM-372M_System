@@ -65,7 +65,7 @@ export const SkillCard: React.FC<SkillCardProps> = ({ skill, onGenerateMission, 
         <button
           onClick={() => onGenerateMission(skill.id)}
           disabled={isGenerating}
-          className="w-full bg-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-primary/90 hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-glow active:scale-95"
         >
           {isGenerating ? (
             <>
