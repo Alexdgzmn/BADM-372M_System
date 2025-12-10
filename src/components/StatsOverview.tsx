@@ -10,9 +10,11 @@ interface StatsOverviewProps {
 export const StatsOverview: React.FC<StatsOverviewProps> = ({ progress }) => {
   // Calculate XP progress for Total Level
   const currentLevelBaseXP = (progress.totalLevel - 1) ** 2 * 100;
+  const nextLevelBaseXP = progress.totalLevel ** 2 * 100;
+  const xpRequiredForLevel = nextLevelBaseXP - currentLevelBaseXP;
   const xpIntoCurrentLevel = progress.totalExperience - currentLevelBaseXP;
   const xpNeededForNextLevel = calculateExperienceToNextLevel(progress.totalExperience);
-  const progressPercentage = (xpIntoCurrentLevel / xpNeededForNextLevel) * 100;
+  const progressPercentage = (xpIntoCurrentLevel / xpRequiredForLevel) * 100;
   const clampedProgress = Math.min(100, Math.max(5, progressPercentage));
 
   return (
@@ -49,8 +51,8 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ progress }) => {
           {/* XP Progress Bar */}
           <div className="space-y-3">
             <div className="flex justify-between text-sm text-slate-400">
-              <span className="font-medium">{xpIntoCurrentLevel.toLocaleString()} / {xpNeededForNextLevel.toLocaleString()} XP</span>
-              <span className="text-secondary">{(xpNeededForNextLevel - xpIntoCurrentLevel).toLocaleString()} XP to level up</span>
+              <span className="font-medium">{xpIntoCurrentLevel.toLocaleString()} / {xpRequiredForLevel.toLocaleString()} XP</span>
+              <span className="text-secondary">{xpNeededForNextLevel.toLocaleString()} XP to level up</span>
             </div>
             <div className="xp-bar">
               <div

@@ -93,9 +93,9 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white rounded-2xl shadow-xl border border-secondary/10 p-8">
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-glow border border-secondary/20 p-8">
         <div className="text-center mb-8">
-          <div className="bg-primary w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="bg-gradient-to-br from-primary to-secondary w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-glow">
             <User className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-2xl font-bold text-primary mb-2">
@@ -177,7 +177,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-primary to-accent-purple text-white py-3 px-4 rounded-lg font-medium hover:scale-105 hover:shadow-glow transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             {mode === 'login' ? 'Sign In' : 'Create Account'}

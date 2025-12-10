@@ -24,7 +24,7 @@ export const AuthPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-primary">
+    <div className="min-h-screen bg-gradient-to-br from-game-bg via-primary to-game-bg">
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center min-h-screen">
           {/* Left side - Branding and features */}
@@ -52,9 +52,9 @@ export const AuthPage: React.FC = () => {
               {features.map((feature, index) => {
                 const Icon = feature.icon;
                 return (
-                  <div key={index} className="flex items-start gap-4">
-                    <div className="bg-secondary/20 border border-secondary/30 p-2 rounded-lg flex-shrink-0">
-                      <Icon className="w-5 h-5 text-secondary" />
+                  <div key={index} className="flex items-start gap-4 bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-200 hover:shadow-glow">
+                    <div className="bg-gradient-to-br from-secondary to-accent-purple p-3 rounded-lg flex-shrink-0 shadow-glow">
+                      <Icon className="w-5 h-5 text-white" />
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-white mb-1 font-headline">
@@ -69,10 +69,10 @@ export const AuthPage: React.FC = () => {
               })}
             </div>
 
-            <div className="bg-primary/20 backdrop-blur-sm border border-secondary/20 rounded-xl p-6 shadow-lg">
+            <div className="bg-gradient-to-r from-accent-purple/20 to-secondary/20 backdrop-blur-sm border border-secondary/30 rounded-xl p-6 shadow-glow">
               <div className="flex items-center gap-4">
-                <div className="bg-secondary/20 p-3 rounded-full">
-                  <Zap className="w-6 h-6 text-secondary" />
+                <div className="bg-gradient-to-br from-accent-gold to-accent-orange p-3 rounded-full shadow-glow animate-pulse-slow">
+                  <Zap className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-secondary">Ready to start?</h3>
